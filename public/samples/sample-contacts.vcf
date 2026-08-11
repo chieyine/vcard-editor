@@ -1,0 +1,16 @@
+BEGIN:VCARD
+VERSION:3.0
+N:Okafor;Ada;;;
+FN:Ada Okafor
+TEL;TYPE=CELL:+234 801 234 5678
+EMAIL;TYPE=INTERNET:ada@example.com
+ORG:Northstar Studio
+TITLE:Product designer
+END:VCARD
+BEGIN:VCARD
+VERSION:3.0
+N:Mensah;Kojo;;;
+FN:Kojo Mensah
+TEL;TYPE=WORK:+233 20 555 0101
+EMAIL:kojo@example.com
+END:VCARD

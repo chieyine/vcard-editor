@@ -1,0 +1,6 @@
+import Link from "next/link";
+import { InfoPage } from "../../components/site-chrome";
+import { formats, guides, platforms } from "../../lib/content-registry";
+import { tools } from "../../lib/tools-registry";
+export const metadata = { title: "HTML Sitemap — vCard Editor", description: "Browse the tools, guides, formats, and platform workflows on vCard Editor.", alternates: { canonical: "/sitemap" } };
+export default function HtmlSitemapPage() { return <InfoPage eyebrow="SITEMAP" title="Browse the site by job." intro="A crawlable index of the public tools and reference content."><h2>Tools</h2><ul className="sitemap-list">{tools.filter((tool) => tool.indexable).map((tool) => <li key={tool.slug}><Link href={`/tool/${tool.slug}`}>{tool.name}</Link></li>)}</ul><h2>Guides</h2><ul className="sitemap-list">{guides.map((page) => <li key={page.slug}><Link href={`/guide/${page.slug}`}>{page.title}</Link></li>)}</ul><h2>Formats</h2><ul className="sitemap-list">{formats.map((page) => <li key={page.slug}><Link href={`/format/${page.slug}`}>{page.title}</Link></li>)}</ul><h2>Platform workflows</h2><ul className="sitemap-list">{platforms.map((page) => <li key={page.slug}><Link href={`/platform/${page.slug}`}>{page.title}</Link></li>)}</ul></InfoPage>; }

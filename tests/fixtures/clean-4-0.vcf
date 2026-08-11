@@ -1,0 +1,7 @@
+BEGIN:VCARD
+VERSION:4.0
+FN:Amara Nwosu
+N:Nwosu;Amara;;;
+TEL;type=cell;VALUE=uri:tel:+2348012345678
+EMAIL:amara@example.test
+END:VCARD

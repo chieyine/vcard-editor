@@ -1,0 +1,12 @@
+BEGIN:VCARD
+VERSION:2.1
+N:Doe;Ada;;;
+FN:Ada Doe
+TEL;CELL:+15550100
+END:VCARD
+BEGIN:VCARD
+VERSION:4.0
+FN:Kojo Mensah
+N:Mensah;Kojo;;;
+EMAIL:kojo@example.test
+END:VCARD

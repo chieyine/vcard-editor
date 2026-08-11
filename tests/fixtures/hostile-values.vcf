@@ -1,0 +1,8 @@
+BEGIN:VCARD
+VERSION:3.0
+N:Payload;Test;;;
+FN:<img src=x onerror=alert(1)>
+EMAIL:=SUM(1+1)
+URL:javascript:alert(1)
+X-__PROTO__:do-not-execute
+END:VCARD

@@ -1,0 +1,7 @@
+BEGIN:VCARD
+VERSION:3.0
+N:Example;Vendor;;;
+FN:Vendor Example
+X-CUSTOM-FIELD:preserve-me
+X-ABLABEL:Work
+END:VCARD

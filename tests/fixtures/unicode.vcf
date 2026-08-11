@@ -1,0 +1,7 @@
+BEGIN:VCARD
+VERSION:3.0
+N:山田;太郎;;;
+FN:太郎 山田
+NOTE:Привет 👋 مرحبا
+EMAIL:taro@example.test
+END:VCARD

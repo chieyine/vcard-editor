@@ -1,0 +1,10 @@
+import Link from "next/link";
+import { ContentPage } from "../lib/content-registry";
+import { SiteFooter, SiteHeader } from "./site-chrome";
+import { siteUrl } from "../lib/site-config";
+
+export function ContentPageView({ page, kind }: { page: ContentPage; kind: "guide" | "format" | "platform" }) {
+  const canonical = `${siteUrl}/${kind}/${page.slug}`;
+  const jsonLd = { "@context": "https://schema.org", "@type": kind === "format" ? "TechArticle" : "Article", headline: page.title, description: page.description, dateModified: page.lastReviewed, mainEntityOfPage: canonical, publisher: { "@type": "Organization", name: "vCard Editor", url: siteUrl } };
+  return <main><SiteHeader /><article className="content-page" id="content"><nav className="breadcrumbs" aria-label="Breadcrumb"><Link href="/">Home</Link><span aria-hidden="true">/</span><Link href={`/${kind}`}>{kind === "guide" ? "Guides" : kind === "format" ? "Formats" : "Platform workflows"}</Link><span aria-hidden="true">/</span><span aria-current="page">{page.title}</span></nav><p className="eyebrow">{page.eyebrow}</p><h1>{page.title}</h1><p className="content-intro">{page.intro}</p><p className="reviewed">Last reviewed {page.lastReviewed}</p>{page.targetTool && <Link className="content-cta" href={page.targetTool}>Open the related tool <span aria-hidden="true">↗</span></Link>}<div className="content-body">{page.sections.map((section) => <section key={section.heading}><h2>{section.heading}</h2>{section.paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}{section.steps && <ol>{section.steps.map((step) => <li key={step}>{step}</li>)}</ol>}</section>)}</div>{page.related.length > 0 && <aside className="related-content" aria-labelledby="related-heading"><h2 id="related-heading">Related tools and guides</h2><div>{page.related.map((related) => <Link href={related.href} key={related.href}>{related.label}<span aria-hidden="true">↗</span></Link>)}</div></aside>}<script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} /></article><SiteFooter /></main>;
+}
