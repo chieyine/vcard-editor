@@ -36,8 +36,9 @@ test("VCF to CSV accepts a fixture and offers a download", async ({ page }) => {
 
 test("every registered tool page renders its own production content", async ({ request }, testInfo) => {
   test.skip(testInfo.project.name !== "desktop-chromium", "the catalogue contract needs one production browser engine");
-  for (let index = 0; index < tools.length; index += 12) {
-    await Promise.all(tools.slice(index, index + 12).map(async (tool) => {
+  const indexableTools = tools.filter((tool) => tool.indexable);
+  for (let index = 0; index < indexableTools.length; index += 12) {
+    await Promise.all(indexableTools.slice(index, index + 12).map(async (tool) => {
       const response = await request.get(`/tool/${tool.slug}`);
       expect(response.status(), tool.slug).toBe(200);
       const html = await response.text();
@@ -45,6 +46,23 @@ test("every registered tool page renders its own production content", async ({ r
       expect(html.toLowerCase(), tool.slug).toContain("how to use");
     }));
   }
+});
+
+test("legacy duplicate URLs permanently redirect to one canonical page", async ({ request }, testInfo) => {
+  test.skip(testInfo.project.name !== "desktop-chromium", "redirect contracts need one production browser engine");
+  const redirects = {
+    "/tool/extract-phone-numbers": "/tool/extract-phone-numbers-from-vcf",
+    "/tool/extract-email-addresses": "/tool/extract-emails-from-vcf",
+    "/platform/import-vcf-google-contacts": "/guide/import-vcf-google-contacts",
+    "/platform/google-contacts-import-vcf": "/guide/import-vcf-google-contacts",
+    "/platform/import-vcf-icloud": "/guide/import-vcf-icloud",
+    "/platform/import-vcf-outlook": "/guide/import-vcf-outlook",
+  };
+  await Promise.all(Object.entries(redirects).map(async ([source, destination]) => {
+    const response = await request.get(source, { maxRedirects: 0 });
+    expect([301, 308], source).toContain(response.status());
+    expect(response.headers().location, source).toBe(destination);
+  }));
 });
 
 test("QR images decode with the offline fallback", async ({ page }, testInfo) => {

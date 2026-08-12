@@ -1,13 +1,49 @@
 export type ContentSection = { heading: string; paragraphs: string[]; steps?: string[] };
-export type ContentPage = { slug: string; title: string; metaTitle: string; description: string; eyebrow: string; intro: string; sections: ContentSection[]; targetTool?: string; related: { label: string; href: string }[]; lastReviewed: string };
+export type ContentFaq = { question: string; answer: string };
+export type ContentSource = { label: string; href: string };
+export type ContentPage = {
+  slug: string;
+  title: string;
+  metaTitle: string;
+  description: string;
+  eyebrow: string;
+  intro: string;
+  answer?: string;
+  sections: ContentSection[];
+  checklist?: string[];
+  faqs?: ContentFaq[];
+  sources?: ContentSource[];
+  targetTool?: string;
+  related: { label: string; href: string }[];
+  lastReviewed: string;
+};
 
 const reviewed = "2026-08-11";
-const guide = (page: Omit<ContentPage, "eyebrow" | "lastReviewed">): ContentPage => ({ ...page, eyebrow: "GUIDE", lastReviewed: reviewed });
-const format = (page: Omit<ContentPage, "eyebrow" | "lastReviewed">): ContentPage => ({ ...page, eyebrow: "FORMAT REFERENCE", lastReviewed: reviewed });
-const platform = (page: Omit<ContentPage, "eyebrow" | "lastReviewed">): ContentPage => ({ ...page, eyebrow: "PLATFORM WORKFLOW", lastReviewed: reviewed });
-const platformWorkflow = (slug: string, title: string, description: string, intro: string, targetTool: string, steps: string[]): ContentPage => platform({ slug, title, metaTitle: `${title} | vCard Editor`, description, intro, targetTool, sections: [{ heading: "A safe local workflow", paragraphs: ["Keep the original export unchanged and start with a small synthetic or copied dataset. Platform screens and field support can vary by version."], steps }, { heading: "Verify after import", paragraphs: ["Spot-check names, international phone numbers, multiple emails, organisations, notes, and photos. This page provides preparation guidance and does not claim live platform compatibility until a dated test is recorded."] }], related: [{ label: "Validate the result", href: "/tool/vcf-validator" }, { label: "Open all tools", href: "/tools" }] });
+const rfc6350Source: ContentSource = { label: "RFC 6350 (vCard 4.0)", href: "https://www.rfc-editor.org/rfc/rfc6350" };
+const googleContactsSource: ContentSource = { label: "Google Contacts Help", href: "https://support.google.com/contacts/" };
+const appleContactsSource: ContentSource = { label: "Apple Support: Contacts", href: "https://support.apple.com/contacts" };
+const microsoftContactsSource: ContentSource = { label: "Microsoft Support: Outlook contacts", href: "https://support.microsoft.com/outlook" };
+function platformSources(title: string) {
+  if (/google/i.test(title)) return [googleContactsSource, rfc6350Source];
+  if (/apple|icloud|iphone|mac/i.test(title)) return [appleContactsSource, rfc6350Source];
+  if (/outlook/i.test(title)) return [microsoftContactsSource, rfc6350Source];
+  return [rfc6350Source];
+}
+type ContentDraft = Omit<ContentPage, "eyebrow" | "lastReviewed">;
+const guide = (page: ContentDraft): ContentPage => ({
+  ...page,
+  sections: page.sections.length >= 3 ? page.sections : [...page.sections, { heading: "Practical verification", paragraphs: [`For ${page.title}, use a copy of the source, review the preview, and compare the output count before importing it into another address book.`], steps: ["Keep the original export unchanged.", "Inspect a representative sample.", "Validate the downloaded copy before import."] }, ...(page.sections.length === 1 ? [{ heading: "Failure case to watch", paragraphs: [`If ${page.title} changes the output count or a representative field unexpectedly, stop and return to the untouched source before trying another transformation.`] }] : [])],
+  eyebrow: "GUIDE",
+  lastReviewed: reviewed,
+  answer: page.answer ?? page.intro,
+  checklist: page.checklist ?? ["Keep an untouched copy of the source export.", "Work on a small sample before changing a complete address book.", "Review the downloaded file before importing it elsewhere."],
+  faqs: page.faqs ?? [{ question: `Does ${page.title} change the original file?`, answer: "No. The browser works with the selected copy and creates a separate download. Keep the original export as your rollback point." }, { question: `How should I verify the result of ${page.title}?`, answer: "Compare the source and output counts, inspect ordinary and edge-case contacts, validate the download, and test a small destination import before using the complete address book." }],
+});
+const format = (page: ContentDraft): ContentPage => ({ ...page, eyebrow: "FORMAT REFERENCE", lastReviewed: reviewed, sources: page.sources ?? [officialSources.rfc6350] });
+const platform = (page: ContentDraft): ContentPage => ({ ...page, eyebrow: "PLATFORM WORKFLOW", lastReviewed: reviewed, sources: page.sources ?? platformSources(page.title) });
+const platformWorkflow = (slug: string, title: string, description: string, intro: string, targetTool: string, steps: string[]): ContentPage => platform({ slug, title, metaTitle: `${title} | vCard Editor`, description, intro, targetTool, sections: [{ heading: "A safe local workflow", paragraphs: [`For ${title}, keep the original export unchanged and start with a small synthetic or copied dataset. Platform screens and field support can vary by version.`], steps }, { heading: "Verify after import", paragraphs: [`After ${title}, spot-check names, international phone numbers, multiple emails, organisations, notes, and photos. This page provides preparation guidance and does not claim live platform compatibility until a dated test is recorded.`] }], related: [{ label: "Validate the result", href: "/tool/vcf-validator" }, { label: "Open all tools", href: "/tools" }] });
 
-export const guides: ContentPage[] = [
+const requiredGuides: ContentPage[] = [
   guide({ slug: "what-is-a-vcf-file", title: "What Is a VCF File?", metaTitle: "What Is a VCF File? Contact Backup Format Explained", description: "Learn what VCF and vCard files contain, how multi-contact files work, and when to use a viewer or editor.", intro: "A VCF file is a plain-text contact file that stores one or more vCards. Phones, email clients, address books, and migration tools use it to move contact details between systems.", targetTool: "/tool/vcf-viewer", sections: [{ heading: "What a vCard can contain", paragraphs: ["A card commonly contains a formatted name, structured name parts, phone numbers, email addresses, organisation, title, notes, categories, a UID, and sometimes a photo. Different applications support different subsets." ]}, { heading: "One file can hold many contacts", paragraphs: ["A file can contain repeated BEGIN:VCARD and END:VCARD blocks. Some older importers expect one card per file, which is why splitting or merging may be necessary." ]}, { heading: "Use the right tool", paragraphs: ["Use the viewer to inspect a file without changing it, the editor to correct fields, and the validator before importing into another address book." ]}], related: [{ label: "Open the VCF viewer", href: "/tool/vcf-viewer" }, { label: "Validate a VCF", href: "/tool/vcf-validator" }] }),
   guide({ slug: "open-vcf-file-windows", title: "How to Open a VCF File on Windows", metaTitle: "How to Open a VCF File on Windows", description: "Open and inspect a VCF file on Windows without importing every contact into your address book.", intro: "Windows applications handle VCF files differently. If double-clicking imports the file unexpectedly, use a browser viewer or editor to inspect it first.", targetTool: "/tool/vcf-editor", sections: [{ heading: "Open it safely", paragraphs: ["Start with the vCard Editor and choose the .vcf file. The file is read in your browser, so you can inspect contact count, versions, warnings, and fields before downloading anything."], steps: ["Open the VCF editor.", "Choose the file from File Explorer.", "Search or select a contact to inspect its fields.", "Download an updated VCF only after reviewing the summary."]}, { heading: "If Windows opens the wrong app", paragraphs: ["Do not change the original backup. Make a copy and use a viewer or editor when you need to inspect the contents without importing them." ]}], related: [{ label: "Edit VCF files", href: "/tool/vcf-editor" }, { label: "Why a VCF will not import", href: "/guide/vcf-file-wont-import" }] }),
   guide({ slug: "open-vcf-file-mac", title: "How to Open a VCF File on Mac", metaTitle: "How to Open a VCF File on Mac", description: "Inspect a VCF file on Mac before importing it into Contacts.", intro: "Apple Contacts can import VCF files directly, but a browser-based viewer is useful when you want to understand the file first or check a large backup.", targetTool: "/tool/vcf-editor", sections: [{ heading: "Inspect before importing", paragraphs: ["Open the editor, choose the VCF, and review the contact count and warnings. This is especially useful when a file contains multiple cards or mixed versions."], steps: ["Keep the original backup unchanged.", "Open the VCF editor and choose the copy.", "Check names, phones, emails, and any warnings.", "Export a repaired or edited copy if needed."]}, { heading: "Preserve the original", paragraphs: ["Keep your original export as a backup. Use a new filename for any normalized or repaired output." ]}], related: [{ label: "Repair a VCF", href: "/tool/vcf-repair" }, { label: "Remove duplicates", href: "/tool/remove-duplicate-contacts" }] }),
@@ -26,6 +62,325 @@ export const guides: ContentPage[] = [
   guide({ slug: "fix-strange-characters-vcf", title: "How to Fix Strange Characters in a VCF File", metaTitle: "How to Fix Strange Characters in VCF Contact Names", description: "Diagnose encoding, byte-order marks, and quoted-printable problems that corrupt contact names.", intro: "Accented or non-Latin names can appear as question marks or garbled characters when an exporter and importer disagree about encoding.", targetTool: "/tool/vcf-repair", sections: [{ heading: "Keep the source intact", paragraphs: ["Start from the original file and open it in the editor. The parser checks for byte-order marks, common encodings, folded lines, and quoted-printable values." ]}, { heading: "Repair and verify", paragraphs: ["Export a repaired copy, then inspect several affected names. If the original bytes were already replaced by question marks, no tool can reconstruct the missing characters reliably." ]}], related: [{ label: "Repair a VCF", href: "/tool/vcf-repair" }, { label: "Edit a VCF", href: "/tool/vcf-editor" }] }),
 ];
 
+const officialSources = {
+  rfc6350: rfc6350Source,
+  rfc2426: { label: "RFC 2426 (vCard 3.0)", href: "https://www.rfc-editor.org/rfc/rfc2426" },
+  rfc2425: { label: "RFC 2425 (directory information)", href: "https://www.rfc-editor.org/rfc/rfc2425" },
+  google: googleContactsSource,
+  apple: appleContactsSource,
+  microsoft: microsoftContactsSource,
+};
+
+const article = (page: Omit<ContentDraft, "eyebrow" | "lastReviewed">): ContentPage => guide({
+  ...page,
+  answer: page.answer ?? page.intro,
+  checklist: page.checklist ?? ["Keep an untouched copy of the source export.", "Work on a small sample before changing a complete address book.", "Review the downloaded file before importing it elsewhere."],
+  faqs: page.faqs ?? [{ question: `Does ${page.title} change the original file?`, answer: "No. The browser works with the selected copy and creates a separate download. Keep the original export as your rollback point." }, { question: `What should I verify after ${page.title}?`, answer: "Compare counts and representative fields, validate the generated copy, and test a small import before processing a full address book." }],
+});
+
+const launchArticles: ContentPage[] = [
+  article({
+    slug: "view-vcf-without-importing", title: "How to View a VCF File Without Importing Every Contact", metaTitle: "How to View a VCF File Without Importing Contacts", description: "Inspect a VCF backup in a browser before it reaches an address book.", intro: "Use a local viewer when you need to understand a contact export without merging it into your phone or cloud address book.", targetTool: "/tool/vcf-viewer", sections: [
+      { heading: "The safest preview path", paragraphs: ["Choose a copy of the file in the VCF viewer. It parses the cards in the browser and shows counts, versions, warnings, and searchable fields before any download is created."] },
+      { heading: "What to inspect", paragraphs: ["Check the number of cards, representative names, international phone numbers, repeatable email fields, notes, photos, and any unknown properties. A preview is also a quick way to spot an accidental export of the wrong address book."], steps: ["Open the VCF viewer.", "Select the copied export.", "Search for a few known contacts and inspect their fields.", "Use the editor or validator only if the preview reveals a problem."] },
+      { heading: "Import only after review", paragraphs: ["If the file looks right, keep the source unchanged and use the reviewed copy for the destination import. If it looks wrong, repair or convert the copy and compare counts again."] },
+    ], related: [{ label: "Open the VCF viewer", href: "/tool/vcf-viewer" }, { label: "Validate a VCF", href: "/tool/vcf-validator" }], sources: [officialSources.rfc6350]
+  }),
+  article({
+    slug: "count-contacts-in-vcf", title: "How to See How Many Contacts Are in a VCF File", metaTitle: "How to Count Contacts in a VCF File", description: "Count vCards locally and confirm whether a multi-contact export is complete.", intro: "A contact count is a simple integrity check: compare the source export, the cleaned copy, and the number shown after import.", targetTool: "/tool/vcf-viewer", sections: [
+      { heading: "Count cards, not lines", paragraphs: ["A vCard can span many physical lines and can contain folded values. Count complete BEGIN:VCARD and END:VCARD blocks rather than estimating from file size or line count."] },
+      { heading: "Compare checkpoints", paragraphs: ["Record the count before cleaning, after merging or splitting, and after the destination import. A lower count may be expected after duplicate removal, but it should never be unexplained."], steps: ["Open the VCF viewer.", "Record the parsed card count and declared versions.", "Run any cleanup on a copy.", "Compare the output count before importing."] },
+      { heading: "When the count is surprising", paragraphs: ["An incomplete final card, an empty contact, or a file that contains only one card can explain a mismatch. Run the validator for structural warnings before assuming contacts were lost."] },
+    ], related: [{ label: "View a VCF", href: "/tool/vcf-viewer" }, { label: "Repair a VCF", href: "/tool/vcf-repair" }], sources: [officialSources.rfc6350]
+  }),
+  article({
+    slug: "multi-contact-vcf-file", title: "How to Open a Multi-Contact VCF File", metaTitle: "How to Open a Multi-Contact VCF File", description: "Understand repeated vCard blocks and preview a multi-contact export safely.", intro: "A multi-contact VCF is one text file containing repeated vCard blocks. View it locally first, then split it only when the receiving app requires individual files.", targetTool: "/tool/vcf-viewer", sections: [
+      { heading: "How multi-contact files are structured", paragraphs: ["Each contact begins with BEGIN:VCARD and ends with END:VCARD. The blocks can share a file even when their versions, optional fields, or export origins differ."] },
+      { heading: "Preview before choosing an import path", paragraphs: ["Use the viewer to confirm the number of cards and inspect a sample from the beginning, middle, and end of the file. This catches truncated exports and unexpected duplicate groups."], steps: ["Open the viewer with a copied file.", "Check the total card count.", "Inspect contacts from different parts of the file.", "Choose a reviewed copy or split it into a ZIP of individual cards."] },
+      { heading: "When splitting helps", paragraphs: ["Some mail and phone workflows accept only the first card in an attachment. Splitting keeps the card content while giving the destination one file per contact."] },
+    ], related: [{ label: "Split a VCF", href: "/tool/split-vcf" }, { label: "Merge VCF files", href: "/tool/merge-vcf" }], sources: [officialSources.rfc2425, officialSources.rfc6350]
+  }),
+  article({
+    slug: "convert-vcf-to-csv-without-losing-phone-numbers", title: "How to Convert VCF to CSV Without Losing Phone Numbers", metaTitle: "Convert VCF to CSV Without Losing Phone Numbers", description: "Export vCard contacts to spreadsheet rows while preserving phone values as text.", intro: "Convert to CSV for inspection or cleanup, but treat every phone number as text so leading zeros, plus signs, extensions, and formatting survive.", targetTool: "/tool/vcf-to-csv", sections: [
+      { heading: "Why phone numbers get damaged", paragraphs: ["Spreadsheet programs infer numeric types. A value such as +2340800123456 or 0012025550123 can be reformatted, rounded, or stripped of its prefix when opened as a number."] },
+      { heading: "Use a safe conversion", paragraphs: ["The VCF to CSV tool writes phone columns as text in the exported workbook or CSV. Preview a few rows before opening them in a spreadsheet that may apply its own formatting."], steps: ["Select the VCF copy.", "Choose the CSV output.", "Inspect phone columns and record the source count.", "Keep the exported file as a working copy for cleanup."] },
+      { heading: "Convert back deliberately", paragraphs: ["When returning to VCF, map each phone column to a type such as cell, work, or home. Do not treat a CSV row as proof that every vCard field was preserved; compare the output with the original sample."] },
+    ], related: [{ label: "VCF to CSV", href: "/tool/vcf-to-csv" }, { label: "CSV to VCF", href: "/tool/csv-to-vcf" }], sources: [officialSources.rfc6350]
+  }),
+  article({
+    slug: "convert-csv-to-vcf-field-mapping", title: "How to Convert CSV to VCF with Correct Field Mapping", metaTitle: "Convert CSV to VCF with Correct Field Mapping", description: "Map spreadsheet columns to vCard fields without guessing at names, phones, or emails.", intro: "A good CSV-to-VCF conversion is a mapping exercise: one row becomes one card, and each column is assigned to a known contact property.", targetTool: "/tool/csv-to-vcf", sections: [
+      { heading: "Start with a clean header row", paragraphs: ["Use one header row and one contact per row. Keep names, phone numbers, emails, and organisation columns separate so a mapping preset can be reviewed rather than inferred from a single combined cell."] },
+      { heading: "Map the fields that matter", paragraphs: ["Map first and last names to N, a display name to FN when available, phone columns to TEL, email columns to EMAIL, and company or role to ORG and TITLE. Keep unknown columns outside the import until you decide how to represent them."], steps: ["Choose the CSV copy.", "Select a generic, Google, or Outlook mapping preset.", "Review every mapped column in the preview.", "Download and validate the generated VCF."] },
+      { heading: "Check loss before import", paragraphs: ["Compare a sample row with its generated card, especially for multiple phones, accented names, notes, and international prefixes. If a field has no vCard equivalent in the selected version, preserve the CSV separately."] },
+    ], related: [{ label: "CSV to VCF", href: "/tool/csv-to-vcf" }, { label: "Validate the generated VCF", href: "/tool/vcf-validator" }], sources: [officialSources.rfc2426, officialSources.rfc6350]
+  }),
+  article({
+    slug: "convert-vcf-to-excel", title: "How to Convert VCF Contacts to Excel", metaTitle: "Convert VCF Contacts to Excel", description: "Turn contact cards into a reviewable workbook with explicit columns and warnings.", intro: "Excel is useful for reviewing rows, filtering a list, or preparing a controlled cleanup. Keep the VCF as the portable backup and use the workbook as a working copy.", targetTool: "/tool/vcf-to-excel", sections: [
+      { heading: "What the workbook represents", paragraphs: ["Each vCard becomes a row. Repeatable phones and emails become separate columns, while photos, UIDs, custom X-properties, and long notes may need a deliberate representation or a warning."] },
+      { heading: "Review the preview", paragraphs: ["Before downloading, compare a few contacts with the source viewer. Look for values that should remain text and fields that do not fit neatly into a spreadsheet column."], steps: ["Choose a VCF copy.", "Open the Excel conversion tool.", "Review the sample rows and warnings.", "Download the workbook and retain the source VCF."] },
+      { heading: "Do not use Excel as the only backup", paragraphs: ["A flat workbook can lose vCard semantics. Keep the original VCF and create a new VCF after any spreadsheet edits, then validate the result before importing it."] },
+    ], related: [{ label: "VCF to Excel", href: "/tool/vcf-to-excel" }, { label: "Excel to VCF", href: "/tool/excel-to-vcf" }], sources: [officialSources.rfc6350]
+  }),
+  article({
+    slug: "keep-leading-zeros-excel-phone-numbers", title: "How to Keep Leading Zeros in Phone Numbers When Using Excel", metaTitle: "Keep Leading Zeros in Excel Phone Numbers", description: "Prevent Excel from treating contact phone numbers as quantities.", intro: "Format phone columns as text before editing or importing. A leading zero is part of the dialling string, not a value to calculate.", targetTool: "/tool/excel-to-vcf", sections: [
+      { heading: "Set the column type before pasting", paragraphs: ["Select the phone column and choose Text before adding values. If Excel has already converted a value, restore it from the source VCF or export rather than guessing the missing zero."] },
+      { heading: "Keep the plus sign too", paragraphs: ["International numbers commonly begin with +. Avoid formulas or numeric formatting that remove the plus sign or turn a long number into scientific notation."], steps: ["Create a working copy of the workbook.", "Format phone columns as Text.", "Paste or import the phone values.", "Preview the generated VCF and compare representative numbers."] },
+      { heading: "Validate after conversion", paragraphs: ["The final check is the generated vCard, not the spreadsheet display. Search the VCF for a few local and international numbers and confirm their TEL values are intact."] },
+    ], related: [{ label: "Excel to VCF", href: "/tool/excel-to-vcf" }, { label: "Normalize phone numbers", href: "/tool/normalize-phone-numbers" }], sources: [officialSources.rfc6350]
+  }),
+  article({
+    slug: "preserve-plus-sign-international-phone-numbers", title: "How to Preserve the Plus Sign in International Phone Numbers", metaTitle: "Preserve Plus Signs in International Phone Numbers", description: "Keep E.164-style prefixes intact through CSV, Excel, and VCF conversion.", intro: "A plus sign communicates that a phone value is international. Preserve it as text all the way from the source export to the destination address book.", targetTool: "/tool/normalize-phone-numbers", sections: [
+      { heading: "Why the prefix matters", paragraphs: ["The same digits can route differently depending on the country context. Removing + or a country code can turn a valid international number into an ambiguous local value."] },
+      { heading: "Protect it through spreadsheets", paragraphs: ["Use text formatting for phone columns and avoid formulas that coerce the value to a number. In a CSV, quote values when a downstream program is known to infer types."], steps: ["Keep the source export unchanged.", "Normalize a copy with phone columns treated as text.", "Preview the generated VCF.", "Spot-check local and international examples after import."] },
+      { heading: "Normalize only with a known country context", paragraphs: ["A formatter cannot safely invent a country code. If the source is ambiguous, preserve the original string and ask for the missing context rather than silently rewriting it."] },
+    ], related: [{ label: "Normalize phone numbers", href: "/tool/normalize-phone-numbers" }, { label: "Validate a VCF", href: "/tool/vcf-validator" }], sources: [officialSources.rfc6350]
+  }),
+  article({
+    slug: "merge-hundreds-of-vcard-files", title: "How to Merge Hundreds of Individual vCard Files", metaTitle: "Merge Hundreds of Individual vCard Files", description: "Combine a large folder of individual cards while checking count, duplicates, and filename safety.", intro: "Bulk merging is practical when each contact is already a separate VCF. Treat the folder as an archive, merge to a new file, and clean duplicates as a separate review step.", targetTool: "/tool/merge-vcf", sections: [
+      { heading: "Prepare the folder", paragraphs: ["Keep only intended .vcf or .vcard files in the working folder. Do not rely on filenames as identity; a file can be named after a person while containing a different card."] },
+      { heading: "Merge and audit the output", paragraphs: ["The merge tool reads selected files locally and writes a multi-contact VCF. Compare the input file count with the parsed card count, then inspect the first, middle, and last cards."], steps: ["Select the individual VCF files.", "Merge them into a new output file.", "Record input and output counts.", "Run duplicate review before importing the archive."] },
+      { heading: "Keep the operation reversible", paragraphs: ["Never delete the source folder after a successful download. The merged file is convenient for migration, but the individual cards remain the easiest recovery path when one record needs repair."] },
+    ], related: [{ label: "Merge VCF files", href: "/tool/merge-vcf" }, { label: "Remove duplicate contacts", href: "/tool/remove-duplicate-contacts" }], sources: [officialSources.rfc6350]
+  }),
+  article({
+    slug: "split-large-vcf-files", title: "How to Split a Large VCF into Smaller Files", metaTitle: "Split a Large VCF into Smaller Files", description: "Break a multi-contact backup into individual cards when an importer has size or count limits.", intro: "Splitting makes a large contact export easier to transfer, inspect, or import in batches, while preserving one vCard per output file.", targetTool: "/tool/split-vcf", sections: [
+      { heading: "When splitting is useful", paragraphs: ["Use it when a mail attachment is too large, a phone imports only the first card, or you need to send a small subset without exposing the whole address book."] },
+      { heading: "Create and name the outputs", paragraphs: ["The splitter uses contact names when available and packages the cards in a ZIP. Review the generated count and watch for repeated names that require unique filenames."], steps: ["Choose the large VCF copy.", "Confirm the parsed card count.", "Download the ZIP of individual vCards.", "Extract and test a small batch before transferring the rest."] },
+      { heading: "Photos can still dominate size", paragraphs: ["A split archive may remain large if photos are embedded in many cards. Create a separate photo-free copy when the receiving workflow does not need contact images."] },
+    ], related: [{ label: "Split a VCF", href: "/tool/split-vcf" }, { label: "Remove VCF photos", href: "/tool/remove-vcf-photos" }], sources: [officialSources.rfc6350]
+  }),
+  article({
+    slug: "sort-contacts-inside-vcf", title: "How to Sort Contacts Inside a VCF File", metaTitle: "How to Sort Contacts Inside a VCF File", description: "Create a predictable contact order without changing the fields inside each vCard.", intro: "Sorting is a presentation and workflow choice, not a contact-identity operation. Sort a copy, keep each complete card together, and verify the count afterward.", targetTool: "/tool/sort-vcf-contacts", sections: [
+      { heading: "Choose the sort key", paragraphs: ["Formatted name is usually the clearest key. If many cards have incomplete FN values, sort by family name or a stable UID only when your workflow supports it."] },
+      { heading: "Keep each card intact", paragraphs: ["A vCard may contain folded lines and repeatable properties. A safe sorter moves whole BEGIN:VCARD…END:VCARD blocks instead of sorting physical lines."], steps: ["Select a copied VCF.", "Choose the sort key and direction.", "Review the preview and count.", "Download the sorted copy and validate it."] },
+      { heading: "Sorting does not remove duplicates", paragraphs: ["Two adjacent cards can be easier to notice, but ordering alone does not decide whether records are the same person. Run duplicate review as a separate operation."] },
+    ], related: [{ label: "Sort VCF contacts", href: "/tool/sort-vcf-contacts" }, { label: "Remove duplicates", href: "/tool/remove-duplicate-contacts" }], sources: [officialSources.rfc6350]
+  }),
+  article({
+    slug: "extract-one-contact-from-vcf", title: "How to Extract One Contact from a Multi-Contact VCF", metaTitle: "Extract One Contact from a Multi-Contact VCF", description: "Find one card, inspect its fields, and download it without exporting the complete address book.", intro: "A local viewer and editor can isolate one contact from a multi-contact backup so you can share or repair only the record that matters.", targetTool: "/tool/vcf-editor", sections: [
+      { heading: "Search by more than display name", paragraphs: ["Names can be duplicated or formatted differently. Search a phone number, email address, company, or a distinctive note to confirm the correct card."] },
+      { heading: "Export a single-card copy", paragraphs: ["After selecting the contact, use the editor's focused export. Check that the output has one complete card and that sensitive fields are present only when you intend to share them."], steps: ["Open the copied VCF in the editor.", "Search and select the target contact.", "Review all fields before exporting.", "Validate the single-card output if another app will import it."] },
+      { heading: "Redact before sharing", paragraphs: ["Photos, notes, addresses, and custom properties can reveal more than a recipient needs. Remove private fields in a copy before sending the card."] },
+    ], related: [{ label: "Edit a VCF", href: "/tool/vcf-editor" }, { label: "Remove private fields", href: "/tool/strip-private-contact-fields" }], sources: [officialSources.rfc6350]
+  }),
+  article({
+    slug: "compare-two-vcf-backups", title: "How to Compare Two VCF Contact Backups", metaTitle: "Compare Two VCF Contact Backups", description: "Compare counts, identities, and fields between two contact exports before choosing a source of truth.", intro: "Comparing backups is safer than importing both and hoping the address book deduplicates them. Start with counts, then review the records that differ.", targetTool: "/tool/compare-vcf-files", sections: [
+      { heading: "Compare identity signals first", paragraphs: ["Use normalized phone numbers, email addresses, UIDs, and names as evidence. No single signal is perfect: shared family numbers and reused work addresses need human review."] },
+      { heading: "Review field-level differences", paragraphs: ["A newer backup may contain a better phone number while an older backup has a private note or photo. Choose the field intentionally instead of replacing an entire card blindly."], steps: ["Select the two copied backups.", "Compare parsed counts and duplicate identities.", "Open changed records and inspect fields.", "Create a new reviewed VCF from the chosen values."] },
+      { heading: "Keep both originals", paragraphs: ["The comparison result is a decision aid, not a destructive merge. Archive both source files with their export dates so the choice can be revisited."] },
+    ], related: [{ label: "Compare VCF files", href: "/tool/compare-vcf-files" }, { label: "Merge VCF files", href: "/tool/merge-vcf" }], sources: [officialSources.rfc6350]
+  }),
+  article({
+    slug: "remove-empty-contacts-from-vcf", title: "How to Remove Empty Contacts from a VCF File", metaTitle: "Remove Empty Contacts from a VCF File", description: "Find blank or unusable vCards without deleting legitimate records that lack a phone number.", intro: "An empty card has no useful identity or contact field. Remove only cards that meet an explicit rule; a contact without a phone number can still be valuable.", targetTool: "/tool/contact-cleaner", sections: [
+      { heading: "Define empty before cleaning", paragraphs: ["A card with FN, EMAIL, or ADR may be intentional even without TEL. Treat a card as empty when it lacks meaningful identity and all useful contact fields, not merely when one field is absent."] },
+      { heading: "Review the candidate list", paragraphs: ["The cleaner presents the records that match the selected rule before generating output. Keep a copy and inspect names, notes, and UIDs for false positives."], steps: ["Open Contact Cleaner.", "Choose the empty-card rule.", "Review candidates and exclude legitimate records.", "Download the cleaned VCF and compare counts."] },
+      { heading: "Why counts can change", paragraphs: ["Removing empty cards should lower the count by exactly the number of confirmed removals. If more records disappear, stop and return to the original backup."] },
+    ], related: [{ label: "Contact Cleaner", href: "/tool/contact-cleaner" }, { label: "Validate a VCF", href: "/tool/vcf-validator" }], sources: [officialSources.rfc6350]
+  }),
+  article({
+    slug: "remove-contacts-without-phone-numbers", title: "How to Remove Contacts Without Phone Numbers", metaTitle: "Remove Contacts Without Phone Numbers Safely", description: "Filter a working copy by phone presence while preserving the original address book export.", intro: "Removing contacts without TEL fields can be useful for a phone-only migration, but it can also discard email-only or address-only contacts. Review the rule before exporting.", targetTool: "/tool/contact-cleaner", sections: [
+      { heading: "Decide what the destination needs", paragraphs: ["A phone import may need at least one TEL value, while a CRM or email migration may not. The correct filter is defined by the destination, not by a generic idea of completeness."] },
+      { heading: "Filter a copy", paragraphs: ["Use the cleaner to identify cards without phone values, review the list, and export a new file. Keep email-only and address-only records when they remain useful to your workflow."], steps: ["Open the contact cleaner.", "Choose the missing-phone filter.", "Review the candidate records.", "Export and validate the destination copy."] },
+      { heading: "Avoid accidental data loss", paragraphs: ["Archive the original and record how many cards were filtered. If the destination later needs email-only records, the source remains available."] },
+    ], related: [{ label: "Contact Cleaner", href: "/tool/contact-cleaner" }, { label: "VCF to CSV", href: "/tool/vcf-to-csv" }], sources: [officialSources.rfc6350]
+  }),
+  article({
+    slug: "remove-photos-from-vcf", title: "How to Remove Contact Photos from a VCF File", metaTitle: "Remove Contact Photos from a VCF File", description: "Reduce VCF size and privacy exposure by removing embedded contact photos from a copy.", intro: "Embedded photos can make a VCF surprisingly large and can expose personal images when a file is shared. Remove them only from a working copy.", targetTool: "/tool/remove-vcf-photos", sections: [
+      { heading: "Why photos make files large", paragraphs: ["A photo is often embedded as base64 text inside the vCard. Repeating that payload across hundreds of contacts can dominate the export size and slow some importers."] },
+      { heading: "Create a photo-free copy", paragraphs: ["The photo-removal tool reports how many cards were changed and downloads a new VCF. Compare the card count and check that names, phones, emails, and notes remain present."], steps: ["Select the VCF copy.", "Review the photo count.", "Remove embedded photos from the output.", "Validate the smaller VCF before importing it."] },
+      { heading: "Privacy is part of compatibility", paragraphs: ["A photo-free file is easier to send through email or support channels. If photos are required by the destination, keep the original and test a small subset first."] },
+    ], related: [{ label: "Remove VCF photos", href: "/tool/remove-vcf-photos" }, { label: "Split a VCF", href: "/tool/split-vcf" }], sources: [officialSources.rfc6350]
+  }),
+  article({
+    slug: "clean-phone-number-formatting", title: "How to Clean Phone-Number Formatting Before Import", metaTitle: "Clean Phone Number Formatting Before Import", description: "Normalize inconsistent phone strings while preserving country codes and extensions.", intro: "Formatting cleanup should make equivalent numbers easier to compare without inventing country codes or silently changing a number's meaning.", targetTool: "/tool/normalize-phone-numbers", sections: [
+      { heading: "Separate display cleanup from interpretation", paragraphs: ["Removing stray spaces or punctuation is usually low-risk. Adding a country code, changing an extension, or converting a local number requires known context and should be explicit."] },
+      { heading: "Review normalization rules", paragraphs: ["The normalizer shows a before-and-after preview so you can reject changes that do not fit the source region or destination system."], steps: ["Choose a copied VCF or spreadsheet.", "Select conservative formatting rules.", "Review local, international, and extension examples.", "Export and validate the normalized copy."] },
+      { heading: "Do not overwrite the source", paragraphs: ["Phone formatting is easy to get almost right and hard to notice after import. Keep the original string available for any record that needs manual correction."] },
+    ], related: [{ label: "Normalize phone numbers", href: "/tool/normalize-phone-numbers" }, { label: "Find phone numbers", href: "/tool/extract-phone-numbers" }], sources: [officialSources.rfc6350]
+  }),
+  article({
+    slug: "strip-private-fields-before-sharing", title: "How to Strip Private Notes and Addresses Before Sharing a vCard", metaTitle: "Remove Private Fields Before Sharing a vCard", description: "Create a minimal public contact card without exposing notes, addresses, or custom fields.", intro: "A shareable business vCard should contain only the fields a recipient needs. Redact private notes, home addresses, photos, and vendor extensions from a copy.", targetTool: "/tool/strip-private-contact-fields", sections: [
+      { heading: "Choose a public field policy", paragraphs: ["A public card often needs FN, ORG, TITLE, one business TEL, one business EMAIL, URL, and perhaps ADR. The right set depends on the person and the sharing context."] },
+      { heading: "Redact with a preview", paragraphs: ["Review the fields selected for removal and the resulting single-card or multi-card output. Keep private values in the source backup, not in the file you plan to publish."], steps: ["Open the private-field remover.", "Choose the fields to strip.", "Review several cards and the output count.", "Download the redacted VCF and validate it."] },
+      { heading: "Check custom properties", paragraphs: ["X-properties and notes can contain CRM identifiers or internal context even when the visible contact looks public. Include them in the review before sharing."] },
+    ], related: [{ label: "Remove private fields", href: "/tool/strip-private-contact-fields" }, { label: "Edit a VCF", href: "/tool/vcf-editor" }], sources: [officialSources.rfc6350]
+  }),
+  article({
+    slug: "repair-corrupt-vcf-file", title: "How to Repair a Corrupt VCF File", metaTitle: "How to Repair a Corrupt VCF File", description: "Diagnose incomplete cards, broken folding, encoding damage, and unsupported values before import.", intro: "Repair begins with diagnosis. Validate a copy, understand which records are incomplete, and export only after you can explain the change.", targetTool: "/tool/vcf-repair", sections: [
+      { heading: "Separate structural damage from unsupported fields", paragraphs: ["Missing BEGIN:VCARD or END:VCARD lines, broken line folding, and malformed properties can prevent parsing. Unknown X-properties may be valid but unsupported by a destination."] },
+      { heading: "Repair with a change report", paragraphs: ["The repair workflow surfaces warnings and creates a new file. Review the count, versions, and representative cards after every repair pass."], steps: ["Validate the original copy.", "Choose only the repair actions you understand.", "Download the repaired VCF.", "Validate the repaired output and compare it with the source."] },
+      { heading: "When repair cannot recover data", paragraphs: ["If bytes were truncated or characters were already replaced, the missing information cannot be reconstructed reliably. Use another export or source backup when possible."] },
+    ], related: [{ label: "Repair a VCF", href: "/tool/vcf-repair" }, { label: "Validate a VCF", href: "/tool/vcf-validator" }], sources: [officialSources.rfc2426, officialSources.rfc6350]
+  }),
+  article({
+    slug: "missing-begin-end-vcard-lines", title: "How to Fix Missing BEGIN:VCARD or END:VCARD Lines", metaTitle: "Fix Missing BEGIN:VCARD or END:VCARD Lines", description: "Find incomplete vCard blocks and repair a copy before attempting another import.", intro: "Every vCard block needs a BEGIN:VCARD and END:VCARD boundary. A missing boundary can make the rest of a file appear to be one malformed contact.", targetTool: "/tool/vcf-repair", sections: [
+      { heading: "Identify the broken boundary", paragraphs: ["Open the raw or validation view and locate the first block that lacks a start or end marker. Do not insert lines based only on line count; use nearby VERSION and FN properties as evidence."] },
+      { heading: "Repair and compare counts", paragraphs: ["A safe repair creates a new file and reports the number of complete cards. Compare it with the number of recognisable contact blocks in the source."], steps: ["Validate the copied file.", "Inspect the reported incomplete block.", "Apply the boundary repair.", "Validate the output and open it in the viewer."] },
+      { heading: "Do not hide truncation", paragraphs: ["If the final card is cut off mid-value, adding END:VCARD may produce a syntactically complete but incomplete contact. Treat truncation as a data-recovery problem, not a cosmetic fix."] },
+    ], related: [{ label: "Repair a VCF", href: "/tool/vcf-repair" }, { label: "Open the raw VCF", href: "/tool/vcf-editor" }], sources: [officialSources.rfc2426, officialSources.rfc6350]
+  }),
+  article({
+    slug: "missing-fn-field-vcard", title: "How to Fix a Missing FN Field in a vCard", metaTitle: "Fix a Missing FN Field in a vCard", description: "Repair cards that have structured N data but no formatted display name.", intro: "FN is the human-readable formatted name used by many address books. If N exists but FN is missing, derive a display value cautiously and review it.", targetTool: "/tool/vcf-repair", sections: [
+      { heading: "Why FN matters", paragraphs: ["A destination may import a card but show it as unnamed when FN is absent. N can hold family and given name components, but it does not always provide the preferred display order or style."] },
+      { heading: "Derive, then review", paragraphs: ["A repair can create FN from the structured name as a fallback. Check prefixes, suffixes, mononyms, and cultures where family-name order is not represented by a simple join."], steps: ["Validate the source copy.", "Find cards with N but no FN.", "Generate a candidate display name.", "Review affected cards and export a new copy."] },
+      { heading: "Keep source semantics", paragraphs: ["Do not replace N with a guessed split of FN. Preserve the structured fields and document any display-name derivation in the change notes."] },
+    ], related: [{ label: "Repair a VCF", href: "/tool/vcf-repair" }, { label: "FN vs N reference", href: "/format/fn-vs-n" }], sources: [officialSources.rfc6350, officialSources.rfc2426]
+  }),
+  article({
+    slug: "mixed-vcard-versions", title: "How to Fix Mixed vCard Versions in One File", metaTitle: "Fix Mixed vCard Versions in One File", description: "Find cards declared as vCard 2.1, 3.0, and 4.0 together and choose a deliberate target version.", intro: "Mixed versions are common after merging exports. A receiving app may accept the file, reject it, or silently drop fields depending on which card it reads first.", targetTool: "/tool/vcard-version-converter", sections: [
+      { heading: "Measure the mix", paragraphs: ["Use the validator to count VERSION values per card. Record unknown or missing versions separately; guessing a target version before seeing the mix can hide compatibility problems."] },
+      { heading: "Convert a copy", paragraphs: ["Choose the destination's documented version when known. Review warnings for parameters, encodings, and extension fields that cannot be represented exactly."], steps: ["Validate the mixed source copy.", "Select a target vCard version.", "Review the conversion report.", "Open and validate the converted output before importing it."] },
+      { heading: "Version is not the whole compatibility story", paragraphs: ["A vCard 3.0 file can still contain unsupported fields or oversized photos. Test representative records in the destination instead of relying on the VERSION line alone."] },
+    ], related: [{ label: "Convert vCard versions", href: "/tool/vcard-version-converter" }, { label: "Version reference", href: "/format/vcard-versions" }], sources: [officialSources.rfc2426, officialSources.rfc6350]
+  }),
+  article({
+    slug: "quoted-printable-vcard-names", title: "How to Fix Quoted-Printable Names in Old VCF Files", metaTitle: "Fix Quoted-Printable Names in Old VCF Files", description: "Understand legacy quoted-printable encoding and repair names without losing non-ASCII characters.", intro: "Older vCard 2.1 exports may use quoted-printable values. A parser that ignores the encoding can show equals signs, broken accents, or wrapped names.", targetTool: "/tool/vcf-repair", sections: [
+      { heading: "Recognise the pattern", paragraphs: ["Quoted-printable values commonly include an ENCODING parameter and hexadecimal byte escapes. Line folding can split the encoded value across physical lines, so both rules must be handled together."] },
+      { heading: "Decode a copy and inspect it", paragraphs: ["The repair workflow should preserve the original property semantics while decoding the display value. Check accented, Cyrillic, and Asian names individually rather than trusting one sample."], steps: ["Validate the source copy.", "Inspect encoding and folding warnings.", "Decode quoted-printable values in the output copy.", "Compare representative names with the original export."] },
+      { heading: "When the source is already damaged", paragraphs: ["If a legacy export replaced bytes with question marks before you received it, decoding cannot recreate the original characters. Request a fresh export when accuracy matters."] },
+    ], related: [{ label: "Repair a VCF", href: "/tool/vcf-repair" }, { label: "Fix strange characters", href: "/guide/fix-strange-characters-vcf" }], sources: [officialSources.rfc2426]
+  }),
+  article({
+    slug: "validate-vcf-before-import", title: "How to Validate a VCF File Before Importing It", metaTitle: "Validate a VCF File Before Importing It", description: "Run structural, field, encoding, and size checks before an address-book migration.", intro: "Validation is a preflight check, not a guarantee that every destination will preserve every field. Use it to catch preventable failures before import.", targetTool: "/tool/vcf-validator", sections: [
+      { heading: "What a useful preflight checks", paragraphs: ["Check boundaries, VERSION, FN, TEL, EMAIL syntax, folded lines, encodings, empty cards, embedded photos, and suspiciously large values. Record warnings instead of dismissing them as noise."] },
+      { heading: "Test a small representative sample", paragraphs: ["A valid file can still expose destination-specific issues. Use synthetic contacts with multiple phones, Unicode names, notes, photos, and repeatable fields when testing a new platform."], steps: ["Select the source copy.", "Run the validator and save the summary.", "Repair or convert only the reported issues.", "Test a small import before the complete address book."] },
+      { heading: "Keep the evidence", paragraphs: ["Record the date, source application, destination version, and output filename. This makes a future migration easier to reproduce and troubleshoot."] },
+    ], related: [{ label: "VCF validator", href: "/tool/vcf-validator" }, { label: "Compatibility checker", href: "/tool/vcf-compatibility-checker" }], sources: [officialSources.rfc2426, officialSources.rfc6350]
+  }),
+  article({
+    slug: "unsupported-vcard-version", title: "Why an App Says the vCard Version Is Unsupported", metaTitle: "Why a vCard Version Is Unsupported", description: "Resolve version mismatch errors by converting a copy and checking field compatibility.", intro: "An unsupported-version message means the destination does not recognise the VERSION value or the way a field is encoded. Convert a copy to the documented target, then test it.", targetTool: "/tool/vcard-version-converter", sections: [
+      { heading: "Find the destination's expected version", paragraphs: ["Look for the current import documentation or a small export produced by the destination. Its own export is often the clearest compatibility fixture."] },
+      { heading: "Convert with warnings visible", paragraphs: ["Choose a target such as vCard 3.0 only when it matches the workflow. Review parameters, repeated properties, and unknown fields that may be dropped or rewritten."], steps: ["Keep the original VCF.", "Inspect VERSION values in the source.", "Convert a working copy to the destination target.", "Validate and test a small import."] },
+      { heading: "Do not equate acceptance with fidelity", paragraphs: ["An app may accept the converted file and still omit photos, notes, or custom fields. Compare representative contacts after import and keep the source archive."] },
+    ], related: [{ label: "Convert vCard versions", href: "/tool/vcard-version-converter" }, { label: "vCard versions", href: "/format/vcard-versions" }], sources: [officialSources.rfc2426, officialSources.rfc6350]
+  }),
+  article({
+    slug: "tel-property-vcard", title: "How TEL Works in vCard 3.0 and 4.0", metaTitle: "How TEL Works in vCard 3.0 and 4.0", description: "Understand phone values, type parameters, and version differences in the TEL property.", intro: "TEL stores a phone value and optional type parameters. The value should remain text, while type labels help an address book present and filter it.", targetTool: "/tool/vcf-editor", sections: [
+      { heading: "The value is not a number", paragraphs: ["Plus signs, leading zeros, pauses, extensions, and formatting can all be meaningful. Treat TEL as a string and avoid spreadsheet conversion that coerces it to numeric data."] },
+      { heading: "Types vary by version and app", paragraphs: ["Common labels include cell, home, work, voice, fax, and text. Version 4.0 uses parameter syntax that differs from many 2.1 exports, so convert a copy when compatibility requires it."], steps: ["Open a sample card in the editor.", "Inspect the TEL value and its parameters.", "Compare a vCard export from the destination.", "Normalize only the formatting you can justify."] },
+      { heading: "Keep multiple phones repeatable", paragraphs: ["Do not collapse several TEL properties into one comma-separated string. Repeat the property so the destination can preserve separate phone types."] },
+    ], related: [{ label: "TEL format reference", href: "/format/tel-property" }, { label: "Normalize phones", href: "/tool/normalize-phone-numbers" }], sources: [officialSources.rfc2426, officialSources.rfc6350]
+  }),
+  article({
+    slug: "email-types-vcard", title: "How EMAIL Types Work in vCard", metaTitle: "How EMAIL Types Work in vCard", description: "Map multiple email addresses and type parameters without flattening useful contact data.", intro: "EMAIL is repeatable. Keep each address as its own property and use type parameters as hints for home, work, or preferred usage.", targetTool: "/tool/vcf-editor", sections: [
+      { heading: "Preserve separate addresses", paragraphs: ["Putting multiple email addresses in one cell or one comma-separated value makes it harder for an address book to choose a default. Repeat EMAIL instead."] },
+      { heading: "Types are not identities", paragraphs: ["A label such as work or home can be useful but is not proof that an address is current. Review the actual address and preserve unknown parameters when possible."], steps: ["Open the contact in the editor.", "Inspect each EMAIL property.", "Map spreadsheet columns to separate addresses.", "Validate the output after conversion."] },
+      { heading: "Check syntax before import", paragraphs: ["A destination may reject or silently skip malformed addresses. Use the validator for missing domains, whitespace, and damaged folding before importing."] },
+    ], related: [{ label: "Edit VCF fields", href: "/tool/vcf-editor" }, { label: "VCF validator", href: "/tool/vcf-validator" }], sources: [officialSources.rfc6350, officialSources.rfc2426]
+  }),
+  article({
+    slug: "adr-property-vcard", title: "How ADR Stores a Postal Address in vCard", metaTitle: "How ADR Stores a Postal Address in vCard", description: "Understand structured address components and why postal fields can be reordered across apps.", intro: "ADR stores a structured postal address rather than one free-form paragraph. The destination decides how those components are displayed, so inspect a real export when layout matters.", targetTool: "/tool/vcf-editor", sections: [
+      { heading: "Structured components", paragraphs: ["The address property can include post office box, extended address, street, locality, region, postal code, and country. Empty components still affect the position of later semicolon-separated values."] },
+      { heading: "Do not split a display string blindly", paragraphs: ["A single line such as “12 High Street, Lagos” does not contain enough information to infer every component reliably. Preserve it as a note or label when the source structure is unknown."], steps: ["Inspect ADR in the raw view.", "Compare the destination's own export syntax.", "Map known columns deliberately.", "Spot-check international addresses after import."] },
+      { heading: "Version and locale matter", paragraphs: ["Address display order and labels vary by region and application. Keep the original structured values and document any locale-specific mapping."] },
+    ], related: [{ label: "Edit an address field", href: "/tool/vcf-editor" }, { label: "vCard property reference", href: "/format/vcard-properties" }], sources: [officialSources.rfc6350]
+  }),
+  article({
+    slug: "vcard-escaping-commas-semicolons", title: "How Commas, Semicolons, and Newlines Are Escaped in vCard", metaTitle: "How vCard Escaping Works", description: "Learn why separators inside names, notes, and addresses must be escaped before parsing.", intro: "vCard uses separators to encode structured values. Literal commas, semicolons, and line breaks need escaping so a parser does not mistake content for another field.", targetTool: "/tool/vcf-validator", sections: [
+      { heading: "Separators have meaning", paragraphs: ["Semicolons separate components in N and ADR. Commas can separate values in some properties. A literal separator inside a value must be escaped according to the version's rules."] },
+      { heading: "Why malformed escaping causes field shifts", paragraphs: ["If an exporter forgets to escape a semicolon in a street or name component, every later component can appear in the wrong column. Validate and inspect the raw card before editing."], steps: ["Open a copied file in the validator.", "Locate fields with unexpected splits.", "Repair escaping in the editor or a known-good export.", "Compare the parsed fields with the original source."] },
+      { heading: "Treat line breaks separately", paragraphs: ["A physical newline may be a folded continuation or an escaped value newline. Joining or splitting lines without understanding folding can damage long notes and encoded fields."] },
+    ], related: [{ label: "VCF validator", href: "/tool/vcf-validator" }, { label: "Line folding reference", href: "/format/vcard-line-folding" }], sources: [officialSources.rfc2426, officialSources.rfc6350]
+  }),
+  article({
+    slug: "x-properties-vcard", title: "What X-Properties Mean in a VCF File", metaTitle: "What X-Properties Mean in a VCF File", description: "Handle vendor-specific vCard properties without assuming every importer understands them.", intro: "X-properties are non-standard or vendor-specific properties. They may contain useful metadata, but they are also a common source of compatibility differences.", targetTool: "/tool/vcf-compatibility-checker", sections: [
+      { heading: "Preserve unknown data when possible", paragraphs: ["A converter should keep unrecognised properties in the source archive or warn before dropping them. Do not rename an X-property into a standard field without knowing its semantics."] },
+      { heading: "Use a destination fixture", paragraphs: ["Export one contact from the destination application and compare its custom properties with the source. This reveals whether the platform uses a stable extension or a one-off internal key."], steps: ["Validate the copied VCF.", "List X-properties and their values.", "Compare a destination-generated sample.", "Choose preserve, remove, or map with an explicit rule."] },
+      { heading: "Privacy review", paragraphs: ["Custom properties can include CRM IDs, sync tokens, or internal notes. Remove them from a public card when the recipient does not need them."] },
+    ], related: [{ label: "Compatibility checker", href: "/tool/vcf-compatibility-checker" }, { label: "Remove private fields", href: "/tool/strip-private-contact-fields" }], sources: [officialSources.rfc6350, officialSources.rfc2426]
+  }),
+  article({
+    slug: "uid-property-vcard", title: "What the UID Field Does in vCard", metaTitle: "What the UID Field Does in vCard", description: "Understand stable contact identifiers and why duplicate workflows should not discard them casually.", intro: "UID identifies a vCard instance for synchronisation and change tracking. It is not automatically proof that two cards represent the same person.", targetTool: "/tool/vcf-validator", sections: [
+      { heading: "UID is an identifier, not a display field", paragraphs: ["A UID can remain stable while names or phone numbers change. It should not be shown as a person's name or merged into a phone number column."] },
+      { heading: "Duplicate detection uses more than UID", paragraphs: ["Exports from different systems may generate different UIDs for the same person, while shared or copied UIDs can appear on unrelated cards. Combine UID evidence with phones, emails, and human review."], steps: ["Inspect UID values in a source copy.", "Compare duplicates using multiple signals.", "Preserve a chosen UID when merging cards.", "Validate the output and record the merge decision."] },
+      { heading: "Synchronisation implications", paragraphs: ["Changing or removing UIDs can make a downstream CardDAV or address-book sync treat a card as new. Only rewrite them when the destination workflow explicitly requires it."] },
+    ], related: [{ label: "VCF validator", href: "/tool/vcf-validator" }, { label: "Compare VCF backups", href: "/guide/compare-two-vcf-backups" }], sources: [officialSources.rfc6350]
+  }),
+  article({
+    slug: "jscontact-vs-vcard", title: "What Is JSContact and How Is It Different from vCard?", metaTitle: "JSContact vs vCard: Practical Differences", description: "Compare the newer JSON contact model with the text-based vCard interchange format.", intro: "vCard is a long-standing text interchange format. JSContact models contact data as JSON and can represent modern applications more naturally, but destination support differs.", targetTool: "/tool/vcard-to-jscontact", sections: [
+      { heading: "Different data models", paragraphs: ["vCard uses property lines, parameters, escaping, and version-specific syntax. JSContact uses typed JSON objects and arrays, which can be easier for application code to validate and transform."] },
+      { heading: "Conversion is not always lossless", paragraphs: ["Custom properties, display preferences, photos, and version-specific parameters may not have a one-to-one mapping. Compare a representative card before adopting a conversion as a backup strategy."], steps: ["Keep the original VCF.", "Convert a small fixture to JSContact.", "Compare phones, emails, names, addresses, notes, photos, and IDs.", "Choose the format that the receiving system documents."] },
+      { heading: "Use the right interchange contract", paragraphs: ["Use vCard when a phone, mail client, or address book expects .vcf. Use JSContact when an API or application explicitly supports its JSON schema and semantics."] },
+    ], related: [{ label: "VCF to JSContact", href: "/tool/vcard-to-jscontact" }, { label: "vCard property reference", href: "/format/vcard-properties" }], sources: [officialSources.rfc6350]
+  }),
+  article({
+    slug: "online-vcf-converters-safe", title: "Are Online VCF Converters Safe?", metaTitle: "Are Online VCF Converters Safe? A Privacy Checklist", description: "Evaluate whether a contact-file tool uploads your address book and what to check before using it.", intro: "A VCF contains personal data. Before using any online converter, establish whether processing is local or server-side, what is retained, and how downloads are protected.", targetTool: "/security", sections: [
+      { heading: "Ask where the bytes go", paragraphs: ["Read the privacy and security documentation, inspect network activity when appropriate, and look for a clear statement about upload, retention, logging, and deletion. A polished interface is not proof of local processing."] },
+      { heading: "Minimise the data first", paragraphs: ["Use a synthetic fixture or a redacted subset for testing. Remove photos, notes, addresses, and custom identifiers before sending a file to a service that you have not assessed."], steps: ["Create a copy of the source export.", "Remove fields the workflow does not need.", "Check the tool's processing and retention model.", "Delete temporary uploads and verify the downloaded result."] },
+      { heading: "Why vCard Editor is local-first", paragraphs: ["The editor parses and transforms the selected file in the browser and creates downloads locally. The security page documents the boundaries and limitations; it is still wise to keep source backups and use least-data fixtures."] },
+    ], related: [{ label: "Read the security model", href: "/security" }, { label: "Remove private fields", href: "/tool/strip-private-contact-fields" }], sources: [officialSources.rfc6350]
+  }),
+  article({
+    slug: "browser-based-file-processing", title: "What Browser-Based File Processing Means", metaTitle: "What Browser-Based File Processing Means for VCF Privacy", description: "Understand local parsing, downloads, storage, and the limits of a browser-based contact tool.", intro: "Browser-based processing means the selected file is read and transformed by code running in the browser tab. It does not automatically mean every surrounding service is private, so the boundaries should be explicit.", targetTool: "/how-it-works", sections: [
+      { heading: "The local path", paragraphs: ["A local workflow reads a File object, parses it in memory, and creates a Blob or download for the result. No application-server upload is needed for that transformation."] },
+      { heading: "What remains outside the file transform", paragraphs: ["Your browser, extensions, analytics configuration, downloads folder, backups, and operating system still have their own privacy controls. Do not paste contact data into support forms or telemetry fields."], steps: ["Open the tool over HTTPS.", "Select only the intended file.", "Review the privacy and security pages.", "Delete temporary copies when the migration is complete."] },
+      { heading: "Use the model as a decision aid", paragraphs: ["Local processing reduces the server-side exposure of contact contents, but it does not remove the need for source backups, trusted devices, browser updates, and careful sharing."] },
+    ], related: [{ label: "How it works", href: "/how-it-works" }, { label: "Security model", href: "/security" }], sources: [officialSources.rfc6350]
+  }),
+  article({
+    slug: "spreadsheet-formula-injection-contact-csv", title: "How Spreadsheet Formula Injection Can Affect Contact CSV Exports", metaTitle: "Spreadsheet Formula Injection in Contact CSV Exports", description: "Recognise cells that could be interpreted as formulas when a contact CSV is opened in a spreadsheet.", intro: "Contact names, notes, or organisations can begin with characters that spreadsheet applications interpret as formulas. Treat exported CSV as data and review it before opening or sharing.", targetTool: "/tool/vcf-to-csv", sections: [
+      { heading: "The risk is in the destination", paragraphs: ["A CSV is text, but a spreadsheet may evaluate cells that begin with =, +, -, or @. A malicious or accidental value can trigger a formula when opened in a capable application."] },
+      { heading: "Reduce exposure", paragraphs: ["Use a preview, open untrusted files in a safe environment, and neutralise formula-like leading characters when your business workflow allows it. Keep the raw VCF as the authoritative source."], steps: ["Export a working CSV copy.", "Scan names, notes, and organisation fields.", "Choose a neutralisation policy for formula-like values.", "Share only the reviewed file and document the transformation."] },
+      { heading: "Do not silently rewrite contact data", paragraphs: ["Prefixing a value changes its display and may affect a later VCF conversion. Make the protection visible and reversible, especially for notes or names that intentionally begin with symbols."] },
+    ], related: [{ label: "VCF to CSV", href: "/tool/vcf-to-csv" }, { label: "Remove private fields", href: "/tool/strip-private-contact-fields" }], sources: [officialSources.rfc6350]
+  }),
+];
+
+type ContentKind = "guide" | "format" | "platform";
+
+const editorialThemes = [
+  { test: /phone|tel|number|mobile/i, label: "phone values", checks: "country code, leading zero, extension, and field type", example: "Include one domestic number, one international number such as +234 801 234 5678, and an extension so the output is tested against real formatting edge cases." },
+  { test: /csv|excel|spreadsheet|tsv|crm/i, label: "tabular data", checks: "header names, delimiter, text formatting, and unmapped columns", example: "Use rows with a leading-zero phone, an international plus sign, a repeated email, and a note beginning with a formula character." },
+  { test: /import|export|google|apple|icloud|outlook|android|samsung|thunderbird|nextcloud/i, label: "a migration", checks: "destination version, card count, names, phones, emails, and unsupported fields", example: "Test a small fixture containing a non-Latin name, multiple phone numbers, two email addresses, an organisation, a note, and a photo-free card." },
+  { test: /duplicate|merge|compare|split|combine/i, label: "contact-set changes", checks: "record count, identity signals, ordering, and the original backup", example: "Include two intentional matches, one shared family phone number, and one genuinely different contact with a similar name." },
+  { test: /repair|encoding|character|fold|escape|version|property|mime|vcard/i, label: "vCard structure", checks: "BEGIN/END boundaries, VERSION, line endings, escaping, folding, and unknown properties", example: "Include Unicode names, a folded NOTE, escaped commas and semicolons, and a vendor X-property before comparing parser warnings." },
+];
+
+function editorialTheme(page: ContentPage) {
+  return editorialThemes.find((theme) => theme.test.test(`${page.slug} ${page.title} ${page.description}`)) ?? editorialThemes[4];
+}
+
+function expandEditorialContent(page: ContentPage, kind: ContentKind): ContentPage {
+  const theme = editorialTheme(page);
+  const destination = page.targetTool ? `the ${page.targetTool.replace("/tool/", "").replaceAll("-", " ")} workspace` : "the browser workspace";
+  const kindLabel = kind === "guide" ? "this guide" : kind === "format" ? "this reference" : "this platform workflow";
+  const expansion: ContentSection[] = [
+    {
+      heading: "Make the decision before changing data",
+      paragraphs: [
+        `${page.title} is easiest to handle when the desired outcome is explicit. Decide whether you are inspecting, transforming, filtering, or importing ${theme.label}; then choose ${destination} and keep the source export unchanged. This prevents a compatibility workaround from becoming an irreversible cleanup operation.`,
+        `For ${page.title}, write down the destination, the expected card count, and the fields that must survive. When checking ${theme.label}, verify ${theme.checks}. If the destination has its own documented version or column names, follow those requirements instead of relying on a generic default.`,
+      ],
+      steps: ["Name the source and destination formats.", "Save an untouched source copy.", "Choose the smallest useful transformation.", "Record the expected count and must-keep fields."],
+    },
+    {
+      heading: "Use a representative test fixture",
+      paragraphs: [
+        `A successful ${page.title} download is not the same as a successful migration. Before processing a complete address book, use a small copied sample that exercises the risky parts of ${theme.label}. ${theme.example}`,
+        `While checking ${page.title}, open the preview and raw representation together when available. Look for silent changes such as dropped repeatable fields, reordered name components, altered phone text, removed photos, or values that were ignored because no mapping existed.`,
+      ],
+      steps: ["Start with five to ten representative records.", "Include one edge case and one ordinary record.", "Compare the preview with the source.", "Stop if a change is not explained by the chosen rule."],
+    },
+    {
+      heading: "Verify the output at the destination boundary",
+      paragraphs: [
+        `After ${page.title} produces a file, validate the output independently before importing or sharing it. Check that the file opens, the card count is plausible, and the key fields remain present. A standards-valid file can still lose information when a destination application supports only a subset of the format.`,
+        `Keep the ${page.title} output, the source filename, the date, and the choices you made together. That small audit trail makes a second migration reproducible and makes it much easier to identify whether a problem came from parsing, transformation, or the destination application.`,
+      ],
+      steps: ["Run the validator or viewer on the downloaded copy.", "Compare counts and representative fields.", "Test the destination with the small sample.", "Only then process the full address book."],
+    },
+  ];
+  return {
+    ...page,
+    sections: [...page.sections, ...expansion],
+    answer: page.answer ?? `Use ${kindLabel} to make one deliberate change at a time, preserve the original source, and verify the downloaded result before another application receives it.`,
+    checklist: page.checklist ?? ["Keep an untouched source copy.", "Test a small representative sample.", "Review counts and required fields.", "Validate the output at the destination."],
+    faqs: page.faqs ?? [{ question: `How do I avoid losing data during ${page.title}?`, answer: `Keep the original export, inspect a representative sample, and compare the output after using ${destination}. Do not overwrite the source until the destination has been checked.` }, { question: `Does ${page.title} guarantee platform compatibility?`, answer: "No. It is a preparation and verification workflow. Destination applications can support different fields, versions, limits, and import paths." }],
+  };
+}
+
+export const guides: ContentPage[] = [...requiredGuides, ...launchArticles].map((page) => expandEditorialContent(page, "guide"));
+
 export const formats: ContentPage[] = [
   format({ slug: "vcard-versions", title: "vCard 2.1, 3.0, and 4.0", metaTitle: "vCard Versions 2.1 vs 3.0 vs 4.0", description: "A practical reference for vCard versions, compatibility, and conversion decisions.", intro: "The version line tells a receiving application how to interpret a contact card. In real exports, compatibility matters as much as the standard.", sections: [{ heading: "At a glance", paragraphs: ["vCard 2.1 is common in older exports, vCard 3.0 is a broadly compatible interchange choice, and vCard 4.0 is newer but not universally accepted." ]}, { heading: "Conversion guidance", paragraphs: ["Convert a copy, preserve unknown properties where possible, and review warnings before importing. Do not overwrite the original backup." ]}], related: [{ label: "Convert vCard versions", href: "/tool/vcf-editor" }, { label: "Version comparison guide", href: "/guide/vcard-2-1-vs-3-0-vs-4-0" }] }),
   format({ slug: "vcard-properties", title: "vCard Property Reference", metaTitle: "vCard Property Reference: FN, N, TEL, EMAIL, and More", description: "Understand the common fields and properties found inside vCard files.", intro: "A vCard is a set of named properties with parameters and values. Knowing the common properties makes validation and troubleshooting easier.", sections: [{ heading: "Common properties", paragraphs: ["FN is the formatted display name. N stores structured name parts. TEL stores phone numbers. EMAIL stores email addresses. ORG and TITLE describe work details. NOTE, CATEGORIES, UID, and PHOTO add optional context." ]}, { heading: "Unknown and X- properties", paragraphs: ["Applications often add vendor properties. A safe converter should preserve unknown properties when it can, or explain when a target version cannot represent them." ]}], related: [{ label: "Validate a VCF", href: "/tool/vcf-validator" }, { label: "Open the raw view", href: "/tool/vcf-editor" }] }),
@@ -33,9 +388,9 @@ export const formats: ContentPage[] = [
   format({ slug: "tel-property", title: "The TEL Property in vCard", metaTitle: "vCard TEL Property: Phone Numbers and Types", description: "Learn how phone numbers and type parameters are represented in vCard files.", intro: "TEL carries a phone number and may include type parameters such as cell, work, home, or preferred.", sections: [{ heading: "Keep phone values as text", paragraphs: ["Phone numbers are identifiers, not quantities. Spreadsheet conversions should preserve leading zeros, plus signs, spaces, and extensions as text." ]}, { heading: "Types are hints", paragraphs: ["Different applications support different type names. When compatibility matters, use common labels and validate the output in the destination workflow." ]}], related: [{ label: "Normalize phone numbers", href: "/tool/normalize-phone-numbers" }, { label: "Extract phone numbers", href: "/tool/extract-phone-numbers" }] }),
   format({ slug: "vcard-line-folding", title: "How vCard Line Folding Works", metaTitle: "vCard Line Folding and Unfolding Explained", description: "Understand folded vCard lines and why a continuation line starts with whitespace.", intro: "Long vCard property lines can be folded across multiple physical lines. A continuation line begins with whitespace and must be joined before parsing.", sections: [{ heading: "Why folding exists", paragraphs: ["Folding keeps long property lines manageable for older transport and text systems. The logical property value remains one value after unfolding." ]}, { heading: "Troubleshooting", paragraphs: ["If a parser treats a continuation as a new property, long notes, photos, or encoded names may be corrupted. Validate the file and inspect the raw view." ]}], related: [{ label: "Validate a VCF", href: "/tool/vcf-validator" }, { label: "Repair a VCF", href: "/tool/vcf-repair" }] }),
   format({ slug: "vcard-mime-type", title: "The vCard MIME Type", metaTitle: "What MIME Type Should a VCF File Use?", description: "Learn the standard media type used when serving or sharing vCard contact files.", intro: "The standard media type for vCard data is text/vcard. File extensions commonly include .vcf and .vcard.", sections: [{ heading: "Why the MIME type matters", paragraphs: ["A correct content type helps browsers and receiving applications understand that a file contains contact-card text rather than an arbitrary download." ]}, { heading: "Practical caveat", paragraphs: ["Some older systems rely mainly on the filename extension. Use a .vcf extension for broad compatibility and keep the card structure valid." ]}], related: [{ label: "Open the VCF editor", href: "/tool/vcf-editor" }, { label: "VCF repair", href: "/tool/vcf-repair" }] }),
-];
+].map((page) => expandEditorialContent(page, "format"));
 
-export const platforms: ContentPage[] = [
+const allPlatforms: ContentPage[] = [
   platformWorkflow("google-contacts-csv-to-vcf", "Convert Google Contacts CSV to VCF", "Map a Google Contacts CSV export into a reviewed vCard file.", "Google exports use repeated contact columns that need deliberate mapping before a vCard import.", "/tool/csv-to-vcf", ["Choose the Google Contacts CSV preset.", "Review phone and email mappings.", "Download a vCard 3.0 copy.", "Validate before importing."]),
   platformWorkflow("outlook-csv-to-vcf", "Convert Outlook CSV to VCF", "Map Outlook contact columns into a local VCF file.", "Outlook CSV headings vary by product and locale, so preview every mapped column.", "/tool/csv-to-vcf", ["Choose the Outlook CSV preset.", "Confirm names, phones, company, and notes.", "Download the mapped VCF.", "Test a small import first."]),
   platformWorkflow("import-vcf-google-contacts", "Import VCF into Google Contacts", "Prepare and validate a VCF before a Google Contacts import.", "A reviewed file makes duplicate and field-loss problems easier to diagnose.", "/tool/vcf-validator", ["Validate the source copy.", "Review duplicates.", "Import the new copy.", "Spot-check several contacts."]),
@@ -61,7 +416,18 @@ export const platforms: ContentPage[] = [
   platform({ slug: "excel-contacts-to-android", title: "Transfer Contacts from Excel to Android", metaTitle: "How to Transfer Excel Contacts to Android", description: "Convert an Excel contact sheet into a VCF file suitable for an Android import.", intro: "Keep phone columns as text, map the sheet deliberately, and review the generated VCF before importing it into Android Contacts.", targetTool: "/tool/excel-to-vcf", sections: [{ heading: "Use a mapped VCF", paragraphs: ["The Excel to VCF tool supports generic and common platform mappings. Preview the contacts, check leading zeros and plus signs, then move the VCF to your device." ]}], related: [{ label: "Excel to VCF", href: "/tool/excel-to-vcf" }, { label: "Normalize phone numbers", href: "/tool/normalize-phone-numbers" }] }),
   platform({ slug: "excel-contacts-to-iphone", title: "Transfer Contacts from Excel to iPhone", metaTitle: "How to Transfer Excel Contacts to iPhone", description: "Turn an Excel contact list into a reviewed VCF file for an iPhone migration.", intro: "Excel is convenient for preparing rows, but VCF is the contact interchange format. Keep the spreadsheet as a source and inspect the generated cards before import.", targetTool: "/tool/excel-to-vcf", sections: [{ heading: "Prepare the workbook", paragraphs: ["Use one contact per row and map first name, last name, phone, email, and organization columns. Keep the original workbook unchanged." ]}], related: [{ label: "Excel to VCF", href: "/tool/excel-to-vcf" }, { label: "VCF validator", href: "/tool/vcf-validator" }] }),
   platform({ slug: "compatibility-matrix", title: "vCard Compatibility Matrix", metaTitle: "vCard Compatibility Matrix | vCard Editor", description: "Review the tested vCard version, field, and workflow coverage for common contact platforms.", intro: "Compatibility claims should be based on synthetic fixtures, official documentation, and a dated test record. This matrix is intentionally conservative while the laboratory grows.", targetTool: "/tool/vcf-validator", sections: [{ heading: "Current coverage", paragraphs: ["The launch profiles focus on common vCard 3.0 output, multi-contact files, basic names, phone numbers, email addresses, organisations, notes, and categories. Field support varies by destination."]}, { heading: "How to use the matrix", paragraphs: ["Validate a copy, review warnings, and test a small synthetic import before moving a full address book. A blank cell means the workflow has not been verified, not that the platform cannot support it."]}], related: [{ label: "VCF validator", href: "/tool/vcf-validator" }, { label: "vCard version converter", href: "/tool/vcard-version-converter" }] }),
-];
+].map((page) => expandEditorialContent(page, "platform"));
+
+// These legacy platform URLs duplicate guide intent. Keep them as permanent
+// redirects for bookmarks, but publish only one canonical page per query.
+export const platformRedirects: Record<string, string> = {
+  "import-vcf-google-contacts": "/guide/import-vcf-google-contacts",
+  "google-contacts-import-vcf": "/guide/import-vcf-google-contacts",
+  "import-vcf-icloud": "/guide/import-vcf-icloud",
+  "import-vcf-outlook": "/guide/import-vcf-outlook",
+};
+
+export const platforms = allPlatforms.filter((page) => !(page.slug in platformRedirects));
 
 export function getGuide(slug: string) { return guides.find((page) => page.slug === slug); }
 export function getFormat(slug: string) { return formats.find((page) => page.slug === slug); }

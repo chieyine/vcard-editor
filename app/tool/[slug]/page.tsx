@@ -102,7 +102,12 @@ const details: Record<ExpansionSlug, { title: string; description: string; mode:
 export function generateStaticParams() { return [...slugs, ...Object.keys(contactToolDetails), ...Object.keys(textToolDetails), ...Object.keys(specialToolDetails)].map((slug) => ({ slug })); }
 
 export function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
-  return params.then(({ slug }) => details[slug as ExpansionSlug] ? { title: `${details[slug as ExpansionSlug].title} — vCard Editor`, description: details[slug as ExpansionSlug].description, alternates: { canonical: `/tool/${slug}` } } : contactToolDetails[slug] ? { title: `${contactToolDetails[slug].title} — vCard Editor`, description: contactToolDetails[slug].description, alternates: { canonical: `/tool/${slug}` } } : textToolDetails[slug] ? { title: `${textToolDetails[slug].title} — vCard Editor`, description: textToolDetails[slug].description, alternates: { canonical: `/tool/${slug}` } } : specialToolDetails[slug] ? { title: `${specialToolDetails[slug].title} — vCard Editor`, description: specialToolDetails[slug].description, alternates: { canonical: `/tool/${slug}` } } : {});
+  return params.then(({ slug }) => {
+    const entry = details[slug as ExpansionSlug] ?? contactToolDetails[slug] ?? textToolDetails[slug] ?? specialToolDetails[slug];
+    if (!entry) return {};
+    const title = `${entry.title} — vCard Editor`;
+    return { title, description: entry.description, alternates: { canonical: `/tool/${slug}` }, openGraph: { title, description: entry.description, type: "website", url: `/tool/${slug}`, images: [{ url: "/opengraph-image", alt: `${entry.title} — vCard Editor` }] }, twitter: { card: "summary_large_image", title, description: entry.description, images: ["/opengraph-image"] } };
+  });
 }
 
 export default async function ExpansionToolPage({ params }: { params: Promise<{ slug: string }> }) {

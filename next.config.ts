@@ -4,12 +4,20 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   async redirects() {
-    return [{
-      source: "/:path*",
-      has: [{ type: "host", value: "www.vcardeditor.com" }],
-      destination: "https://vcardeditor.com/:path*",
-      permanent: true,
-    }];
+    return [
+      { source: "/tool/extract-phone-numbers", destination: "/tool/extract-phone-numbers-from-vcf", permanent: true },
+      { source: "/tool/extract-email-addresses", destination: "/tool/extract-emails-from-vcf", permanent: true },
+      { source: "/platform/import-vcf-google-contacts", destination: "/guide/import-vcf-google-contacts", permanent: true },
+      { source: "/platform/google-contacts-import-vcf", destination: "/guide/import-vcf-google-contacts", permanent: true },
+      { source: "/platform/import-vcf-icloud", destination: "/guide/import-vcf-icloud", permanent: true },
+      { source: "/platform/import-vcf-outlook", destination: "/guide/import-vcf-outlook", permanent: true },
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "www.vcardeditor.com" }],
+        destination: "https://vcardeditor.com/:path*",
+        permanent: true,
+      },
+    ];
   },
   async headers() {
     const isDevelopment = process.env.NODE_ENV === "development";

@@ -9,6 +9,12 @@ describe("tabular conversion", () => {
     expect(result.contacts[0].phones).toEqual(["+234 801 234 5678"]);
   });
 
+  it("auto-detects pipe-delimited exports", () => {
+    const result = parseCsv("First Name|Last Name|Phone\nAda|Okafor|+234 801 234 5678\n");
+    expect(result.delimiter).toBe("|");
+    expect(result.rows[0]).toMatchObject({ "First Name": "Ada", "Last Name": "Okafor" });
+  });
+
   it("quotes cells and prefixes formula-like values", () => {
     const csv = rowsToCsv([{ Name: "Ada, Okafor", Value: "=SUM(1+1)" }]);
     expect(csv).toContain('"Ada, Okafor"');

@@ -1,10 +1,12 @@
 "use client";
 
 import { ChangeEvent, useMemo, useRef, useState } from "react";
+import { zipSync } from "fflate";
 import { decodeVCardBytes, parseVCard, serializeVCards } from "../lib/vcard";
 import { CONTACT_COLUMNS, ContactColumn, contactsToRows, parseCsv, parseSpreadsheet, rowsToContacts, rowsToCsv, rowsToXlsx, suggestMapping, TabularRow } from "../lib/tabular";
 import { guardFile } from "../lib/file-guard";
 import { trackEvent } from "../lib/analytics";
+import type { KnownVCardVersion } from "../lib/vcard";
 
 export type ConversionMode = "vcf-to-csv" | "csv-to-vcf" | "tsv-to-vcf" | "vcf-to-xlsx" | "xlsx-to-vcf";
 
@@ -38,6 +40,8 @@ export default function ConversionWorkspace({ mode }: { mode: ConversionMode }) 
   const [warnings, setWarnings] = useState<string[]>([]);
   const [status, setStatus] = useState("Choose a file to begin");
   const [sheetName, setSheetName] = useState("");
+  const [outputVersion, setOutputVersion] = useState<KnownVCardVersion>("3.0");
+  const [outputMode, setOutputMode] = useState<"combined" | "individual">("combined");
 
   const previewRows = useMemo(() => rows.slice(0, 5), [rows]);
   const mappedContacts = useMemo(() => rowsToContacts(rows, mapping), [rows, mapping]);
@@ -91,7 +95,14 @@ export default function ConversionWorkspace({ mode }: { mode: ConversionMode }) 
       if (mode === "csv-to-vcf" || mode === "tsv-to-vcf" || mode === "xlsx-to-vcf") {
       if (!Object.values(mapping).some((value) => value !== "ignore")) { setStatus("Map at least one source column before exporting"); return; }
       const converted = mappedContacts;
-      downloadBlob(serializeVCards(converted.contacts, { version: "3.0", preserveUnknown: false }), `${outputName}-converted.vcf`, "text/vcard;charset=utf-8");
+      if (outputMode === "individual") {
+        const files = Object.fromEntries(converted.contacts.map((contact, index) => [`${String(index + 1).padStart(4, "0")}-${(contact.formattedName || `contact-${index + 1}`).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || `contact-${index + 1}`}.vcf`, new TextEncoder().encode(serializeVCards([contact], { version: outputVersion, preserveUnknown: false }))]));
+        const archive = zipSync(files);
+        // fflate returns a Uint8Array whose generic buffer type can include
+        // SharedArrayBuffer in newer TypeScript libs; Blob accepts the
+        // concrete browser ArrayBuffer produced here.
+        downloadBlob(archive.buffer.slice(archive.byteOffset, archive.byteOffset + archive.byteLength) as ArrayBuffer, `${outputName}-contacts.zip`, "application/zip");
+      } else downloadBlob(serializeVCards(converted.contacts, { version: outputVersion, preserveUnknown: false }), `${outputName}-converted.vcf`, "text/vcard;charset=utf-8");
       setWarnings(converted.warnings); setStatus(`Downloaded ${converted.contacts.length.toLocaleString()} contacts`);
       trackEvent("download_clicked", { tool_slug: mode, output_format: "vcf", contact_count_bucket: converted.contacts.length > 1000 ? "1000-plus" : converted.contacts.length > 100 ? "101-1000" : "0-100" });
     } else {
@@ -101,6 +112,13 @@ export default function ConversionWorkspace({ mode }: { mode: ConversionMode }) 
       setStatus(`Downloaded ${outputRows.length.toLocaleString()} rows`);
       trackEvent("download_clicked", { tool_slug: mode, output_format: mode === "vcf-to-csv" ? "csv" : "xlsx", contact_count_bucket: outputRows.length > 1000 ? "1000-plus" : outputRows.length > 100 ? "101-1000" : "0-100" });
     }
+  }
+
+  function downloadMappingReport() {
+    if (!isTabularInput || !headers.length) return;
+    const mappingLines = headers.map((header) => `${header}\t${mapping[header] ?? "ignore"}`);
+    const rejected = mappedContacts.warnings.length ? `\nRejected or review rows\n${mappedContacts.warnings.join("\n")}` : "";
+    downloadBlob(["vCard Editor mapping report", `Source: ${fileName}`, `Sheet: ${sheetName || "n/a"}`, `Rows: ${rows.length}`, `Output version: ${outputVersion}`, `Output mode: ${outputMode}`, "", "Source column\tTarget field", ...mappingLines, rejected].join("\n"), `${outputName}-mapping-report.txt`, "text/plain;charset=utf-8");
   }
 
   function applyPreset(value: "generic" | "google" | "outlook") {
@@ -135,7 +153,7 @@ export default function ConversionWorkspace({ mode }: { mode: ConversionMode }) 
   return <div className="conversion-card">
     <div className="conversion-toolbar"><span className="file-icon" aria-hidden="true">{config.inputKind === "xlsx" ? "XLS" : config.inputKind === "csv" ? "CSV" : "VCF"}</span><div><strong>{fileName || config.title}</strong><small aria-live="polite">{status}{sheetName ? ` · Sheet: ${sheetName}` : ""}</small></div>{fileName && <button className="secondary-button" onClick={reset}>Open another</button>}</div>
     {!fileName ? <div className="conversion-dropzone" onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); const file = event.dataTransfer.files[0]; if (file) processFile(file); }}><div className="drop-icon" aria-hidden="true">↥</div><h2>Choose your {config.input}</h2><p>Files are read locally in your browser. Nothing is uploaded to convert it.</p><div className="drop-actions"><button className="primary-button" onClick={() => inputRef.current?.click()}>Choose {config.input} <span>⌘</span></button><button className="text-button" onClick={loadSample}>Try a sample</button></div><input ref={inputRef} aria-label={`Choose ${config.input}`} type="file" accept={config.accept} onChange={handleFile} hidden /><small>Output: {config.output}</small></div> : <>
-      {isTabularInput && <section className="mapping-section"><div className="mapping-heading"><div><p className="eyebrow">MAP COLUMNS</p><h2>Tell us what each column means.</h2></div><div className="mapping-tools"><label>Preset<select value={preset} onChange={(event) => applyPreset(event.target.value as "generic" | "google" | "outlook")}><option value="generic">Generic CSV</option><option value="google">Google Contacts</option><option value="outlook">Outlook CSV</option></select></label><span>{headers.length} source columns</span></div></div><div className="mapping-grid">{headers.map((header) => <label key={header}><span>{header}</span><select value={mapping[header] ?? "ignore"} onChange={(event) => setMapping((current) => ({ ...current, [header]: event.target.value as ContactColumn | "ignore" }))}><option value="ignore">Ignore this column</option>{CONTACT_COLUMNS.map((column) => <option value={column.key} key={column.key}>{column.label}</option>)}</select></label>)}</div><p className="mapping-note">Phone and email columns can be repeated. Values are combined into the same contact.</p></section>}
+      {isTabularInput && <section className="mapping-section"><div className="mapping-heading"><div><p className="eyebrow">MAP COLUMNS</p><h2>Tell us what each column means.</h2></div><div className="mapping-tools"><label>Preset<select value={preset} onChange={(event) => applyPreset(event.target.value as "generic" | "google" | "outlook")}><option value="generic">Generic CSV</option><option value="google">Google Contacts</option><option value="outlook">Outlook CSV</option></select></label><span>{headers.length} source columns</span></div></div><div className="mapping-grid">{headers.map((header) => <label key={header}><span>{header}</span><select value={mapping[header] ?? "ignore"} onChange={(event) => setMapping((current) => ({ ...current, [header]: event.target.value as ContactColumn | "ignore" }))}><option value="ignore">Ignore this column</option>{CONTACT_COLUMNS.map((column) => <option value={column.key} key={column.key}>{column.label}</option>)}</select></label>)}</div><div className="conversion-options"><label>Output version<select value={outputVersion} onChange={(event) => setOutputVersion(event.target.value as KnownVCardVersion)}><option value="2.1">vCard 2.1</option><option value="3.0">vCard 3.0</option><option value="4.0">vCard 4.0</option></select></label><label>Output files<select value={outputMode} onChange={(event) => setOutputMode(event.target.value as "combined" | "individual")}><option value="combined">One multi-contact VCF</option><option value="individual">One VCF per row (ZIP)</option></select></label><button className="text-button" type="button" onClick={downloadMappingReport}>Download mapping report</button></div><p className="mapping-note">Phone and email columns can be repeated. Values are combined into the same contact. Rows without a name, phone, or email remain visible as warnings for review.</p></section>}
       <section className="preview-section"><div className="preview-heading"><div><p className="eyebrow">PREVIEW</p><h2>{isTabularInput ? `${mappedContacts.contacts.length.toLocaleString()} contacts after mapping` : `${contacts.length.toLocaleString()} contacts ready`}</h2></div><button className="primary-button compact" onClick={download}>Download {mode.includes("to-vcf") ? "VCF" : mode.endsWith("csv") ? "CSV" : "Excel"} <span>↓</span></button></div><div className="preview-table-wrap"><table><thead><tr>{headers.slice(0, 8).map((header) => <th key={header}>{header}</th>)}</tr></thead><tbody>{previewRows.map((row, index) => <tr key={index}>{headers.slice(0, 8).map((header) => <td key={header}>{row[header] || <span className="empty-cell">—</span>}</td>)}</tr>)}</tbody></table>{!previewRows.length && <p className="empty-preview">No rows to preview.</p>}</div></section>
       {warnings.length > 0 && <div className="conversion-warning"><strong>{warnings.length} warning{warnings.length === 1 ? "" : "s"}</strong>{warnings.slice(0, 3).map((warning) => <span key={warning}>{warning}</span>)}</div>}
     </>}

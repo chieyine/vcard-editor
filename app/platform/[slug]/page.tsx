@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { ContentPageView } from "../../../components/content-page";
-import { getPlatform, platforms } from "../../../lib/content-registry";
+import { getPlatform, platformRedirects, platforms } from "../../../lib/content-registry";
 
-export function generateStaticParams() { return platforms.map((page) => ({ slug: page.slug })); }
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> { const page = getPlatform((await params).slug); if (!page) return {}; return { title: page.metaTitle, description: page.description, alternates: { canonical: `/platform/${page.slug}` }, openGraph: { title: page.metaTitle, description: page.description, type: "article", url: `/platform/${page.slug}` } }; }
-export default async function PlatformPage({ params }: { params: Promise<{ slug: string }> }) { const page = getPlatform((await params).slug); if (!page) notFound(); return <ContentPageView page={page} kind="platform" />; }
+export function generateStaticParams() { return [...platforms.map((page) => ({ slug: page.slug })), ...Object.keys(platformRedirects).map((slug) => ({ slug }))]; }
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> { const slug = (await params).slug; if (platformRedirects[slug]) return { robots: { index: false, follow: true }, alternates: { canonical: platformRedirects[slug] } }; const page = getPlatform(slug); if (!page) return {}; return { title: page.metaTitle, description: page.description, authors: [{ name: "vCard Editor" }], alternates: { canonical: `/platform/${page.slug}` }, openGraph: { title: page.metaTitle, description: page.description, type: "article", url: `/platform/${page.slug}`, publishedTime: `${page.lastReviewed}T00:00:00.000Z`, modifiedTime: `${page.lastReviewed}T00:00:00.000Z`, authors: ["vCard Editor"], images: [{ url: "/opengraph-image", alt: `${page.title} — vCard Editor` }] }, twitter: { card: "summary_large_image", title: page.metaTitle, description: page.description, images: ["/opengraph-image"] } }; }
+export default async function PlatformPage({ params }: { params: Promise<{ slug: string }> }) { const slug = (await params).slug; if (platformRedirects[slug]) permanentRedirect(platformRedirects[slug]); const page = getPlatform(slug); if (!page) notFound(); return <ContentPageView page={page} kind="platform" />; }

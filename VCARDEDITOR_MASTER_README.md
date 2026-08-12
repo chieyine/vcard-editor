@@ -3356,7 +3356,9 @@ Recommended:
 5. data-loss or compatibility notes;
 6. tool CTA;
 7. questions and answers;
-8. source and test notes.
+8. references when they add authority.
+
+Internal fixture coverage, last-tested dates, and update triggers belong in the editorial audit and release workflow rather than in every reader-facing article. Show them publicly only when they help a user make a decision or understand a compatibility limitation.
 
 ### 24.7 Format reference pages
 
@@ -4706,4 +4708,3 @@ When a trade-off is required, preserve correctness, privacy, and user trust befo
 The simplest statement of the project is:
 
 > **Build the place people trust when a VCF file needs to be opened, edited, converted, cleaned, or repaired.**
-

@@ -22,16 +22,16 @@ Reviewed on 2026-08-11 against `VCARDEDITOR_MASTER_README.md`. “Verified” me
 | `app/layout.tsx`, `app/page.tsx`, `app/globals.css` | Verified global metadata, privacy-safe shell integrations, responsive homepage, design system, focus states, and WCAG contrast corrections. |
 | `app/error.tsx`, `app/global-error.tsx`, `app/loading.tsx`, `app/not-found.tsx` | Verified route, global, loading, and missing-page recovery states. |
 | `app/manifest.ts`, `app/robots.ts`, `app/opengraph-image.tsx`, `app/icon.svg` | Verified PWA metadata, crawler policy, build-safe social image, and icon. |
-| `app/sitemap.xml/route.ts`, `app/sitemap/page.tsx` | Verified machine and human sitemaps from the same registries. |
+| `app/sitemap.xml/route.ts`, `app/sitemap/page.tsx` | Verified machine and human sitemaps from the same registries, content-specific review dates, and exclusion of redirects and non-indexable aliases. |
 | `app/tools/page.tsx`, `app/guide/page.tsx`, `app/format/page.tsx`, `app/platform/page.tsx` | Verified crawlable directories and registry-driven discovery. |
-| `app/guide/[slug]/page.tsx`, `app/format/[slug]/page.tsx`, `app/platform/[slug]/page.tsx` | Verified static params, unique metadata, canonical URLs, missing-page handling, and structured content. |
+| `app/guide/[slug]/page.tsx`, `app/format/[slug]/page.tsx`, `app/platform/[slug]/page.tsx` | Verified static params, unique metadata, canonical URLs, page-specific Open Graph/Twitter metadata, author/date structured data, missing-page handling, substantive structured content, and permanent consolidation of duplicate search intent. |
 | `app/about`, `accessibility`, `author`, `browser-support`, `changelog`, `contact`, `cookies`, `how-it-works`, `privacy`, `security`, `terms` | Verified all trust, policy, help, and ownership pages render and enter the sitemap/footer. |
 
 ## Tool routes
 
 | File or group | Result |
 | --- | --- |
-| `app/tool/[slug]/page.tsx` | Verified 72 expansion routes, static generation, unique metadata, real processor dispatch, 404 handling, and structured data. |
+| `app/tool/[slug]/page.tsx` | Verified registry-driven expansion routes, static generation, unique metadata, real processor dispatch, 404 handling, and structured data. |
 | `app/tool/vcf-editor`, `vcf-viewer`, `vcard-creator`, `bulk-vcard-creator` | Verified flagship open/edit/view/create workflows. |
 | `app/tool/csv-to-vcf`, `vcf-to-csv`, `excel-to-vcf`, `vcf-to-excel` | Verified real tabular conversion routes and mapping workspaces. |
 | `app/tool/merge-vcf`, `split-vcf`, `compare-vcf-files` | Verified multi-file merge, ZIP split, and comparison routes. |

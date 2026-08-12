@@ -68,7 +68,10 @@ export function rowsToCsv(rows: TabularRow[]) {
 export function parseCsv(text: string): { headers: string[]; rows: TabularRow[]; delimiter: string; warnings: string[] } {
   const clean = text.replace(/^\uFEFF/, "");
   const firstLine = clean.split(/\r\n|\n|\r/, 1)[0] ?? "";
-  const candidates = [",", "\t", ";"];
+  // Support the delimiters most commonly emitted by address-book exports.
+  // The first row is used for a lightweight, deterministic auto-detection;
+  // quoted delimiters are handled correctly by the parser below.
+  const candidates = [",", "\t", ";", "|"];
   const delimiter = candidates.sort((a, b) => firstLine.split(b).length - firstLine.split(a).length)[0];
   const records: string[][] = [];
   let record: string[] = [];
