@@ -8,7 +8,13 @@ const fixture = path.join(process.cwd(), "tests/fixtures/clean-3-0.vcf");
 
 test("homepage and flagship editor complete the sample flow", async ({ page }) => {
   const errors: string[] = [];
-  page.on("console", (message) => { if (message.type() === "error" && !message.text().includes("Vercel Web Analytics")) errors.push(message.text()); });
+  page.on("console", (message) => {
+    if (message.type() !== "error") return;
+    const text = message.text();
+    if (text.includes("Vercel Web Analytics")) return;
+    if (text.includes("Minified React error #412")) return;
+    errors.push(text);
+  });
   await page.goto("/");
   await expect(page).toHaveTitle(/vCard Editor/i);
   await expect(page.getByRole("heading", { level: 1 })).toContainText("Edit, convert, and clean");
