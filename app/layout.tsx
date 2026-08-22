@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { isPreviewDeployment } from "../lib/feature-flags";
+import { analyticsEnabled, isPreviewDeployment } from "../lib/feature-flags";
 import { PageViewTracker } from "../components/page-view-tracker";
 import { ServiceWorkerRegister } from "../components/service-worker-register";
 import { siteUrl } from "../lib/site-config";
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body><PageViewTracker /><ServiceWorkerRegister />{children}<Analytics /></body>
+      <body><PageViewTracker /><ServiceWorkerRegister />{children}{analyticsEnabled && <Analytics />}</body>
     </html>
   );
 }
