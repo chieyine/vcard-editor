@@ -11,7 +11,7 @@ export default function ToolSupportingContent({ slug }: { slug: string }) {
   const inputs = tool.inputFormats.length ? tool.inputFormats.join(", ") : "details entered in the workspace";
   const outputs = tool.outputFormats.length ? tool.outputFormats.join(", ") : "an on-screen review";
 
-  return <section className="tool-supporting" aria-labeledby={`${slug}-guide`}><nav className="tool-breadcrumbs" aria-label="Breadcrumb"><Link href="/">Home</Link><span aria-hidden="true">/</span><Link href="/tools">Tools</Link><span aria-hidden="true">/</span><span aria-current="page">{tool.name}</span></nav>
+  return <section className="tool-supporting" aria-labelledby={`${slug}-guide`}><nav className="tool-breadcrumbs" aria-label="Breadcrumb"><Link href="/">Home</Link><span aria-hidden="true">/</span><Link href="/tools">Tools</Link><span aria-hidden="true">/</span><span aria-current="page">{tool.name}</span></nav>
     <div className="tool-supporting-intro"><p className="eyebrow">HOW TO USE THIS TOOL</p><h2 id={`${slug}-guide`}>{tool.name}, without uploading contact data</h2><p>{tool.description} The processor runs in this browser, keeps the original source unchanged, and asks you to review the result before any download.</p></div>
     <div className="tool-supporting-grid">
       <article><span>01</span><h3>Choose or enter the source</h3><p>Use {inputs}. File type hints help with selection, while the processor also checks the content before using it.</p></article>
