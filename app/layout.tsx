@@ -4,6 +4,7 @@ import { isPreviewDeployment } from "../lib/feature-flags";
 import { PageViewTracker } from "../components/page-view-tracker";
 import { ServiceWorkerRegister } from "../components/service-worker-register";
 import { siteUrl } from "../lib/site-config";
+import { Analytics } from "@vercel/analytics/next";
 
 const verification = {
   ...(process.env.GOOGLE_SITE_VERIFICATION ? { google: process.env.GOOGLE_SITE_VERIFICATION } : {}),
@@ -39,7 +40,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body><PageViewTracker /><ServiceWorkerRegister />{children}</body>
+      <body><PageViewTracker /><ServiceWorkerRegister />{children}<Analytics /></body>
     </html>
   );
 }
