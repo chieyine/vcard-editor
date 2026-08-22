@@ -11,6 +11,8 @@ const verification = {
   ...(process.env.BING_SITE_VERIFICATION ? { other: { "msvalidate.01": process.env.BING_SITE_VERIFICATION } } : {}),
 };
 
+const shouldLoadVercelAnalytics = process.env.VERCEL === "1" || analyticsEnabled;
+
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: "vCard Editor — Edit, convert, and clean contact files",
@@ -40,7 +42,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body><PageViewTracker /><ServiceWorkerRegister />{children}{analyticsEnabled && <Analytics />}</body>
+      <body><PageViewTracker /><ServiceWorkerRegister />{children}{shouldLoadVercelAnalytics && <Analytics />}</body>
     </html>
   );
 }
