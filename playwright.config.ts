@@ -22,6 +22,6 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   reporter: [["list"], ["html", { open: "never", outputFolder: "playwright-report" }]],
   use: { baseURL: "http://127.0.0.1:3100", actionTimeout: 15000, trace: "retain-on-failure", screenshot: "only-on-failure", video: "retain-on-failure" },
-  webServer: { command: "npm run start -- --hostname 127.0.0.1 -p 3100", url: "http://127.0.0.1:3100", reuseExistingServer: false, timeout: 120000 },
+  webServer: { command: "npx next start --hostname 127.0.0.1 -p 3100", url: "http://127.0.0.1:3100", reuseExistingServer: !process.env.CI, timeout: 120000 },
   projects,
 });

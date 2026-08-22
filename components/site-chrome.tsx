@@ -47,7 +47,7 @@ export function SiteFooter() {
           <div><h2>Policies</h2><Link href="/privacy">Privacy</Link><Link href="/cookies">Cookies</Link><Link href="/terms">Terms</Link><Link href="/sitemap">HTML sitemap</Link></div>
         </nav>
       </div>
-      <div className="footer-bottom"><span>© 2026 vCard Editor</span><span>Built for careful contact-file work.</span></div>
+      <div className="footer-bottom"><span>© {new Date().getFullYear()} vCard Editor</span><span>Built for careful contact-file work.</span></div>
     </footer>
   );
 }

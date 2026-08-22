@@ -1,11 +1,13 @@
 import { BarcodeFormat, EncodeHintType, QRCodeWriter } from "@zxing/library";
 
+export type QrErrorCorrection = "L" | "M" | "Q" | "H";
+
 /** Encode a standards-valid QR matrix locally with no network dependency. */
-export function encodeQr(value: string): boolean[][] {
+export function encodeQr(value: string, errorCorrection: QrErrorCorrection = "L"): boolean[][] {
   if (!value.trim()) throw new Error("Enter contact details before creating a QR code.");
   const hints = new Map<EncodeHintType, string | number>();
   hints.set(EncodeHintType.CHARACTER_SET, "UTF-8");
-  hints.set(EncodeHintType.ERROR_CORRECTION, "L");
+  hints.set(EncodeHintType.ERROR_CORRECTION, errorCorrection);
   hints.set(EncodeHintType.MARGIN, 0);
   try {
     const matrix = new QRCodeWriter().encode(value, BarcodeFormat.QR_CODE, 0, 0, hints);
@@ -17,8 +19,8 @@ export function encodeQr(value: string): boolean[][] {
   }
 }
 
-export function qrToSvg(value: string, moduleSize = 5, margin = 4) {
-  const matrix = encodeQr(value);
+export function qrToSvg(value: string, moduleSize = 5, margin = 4, errorCorrection: QrErrorCorrection = "L") {
+  const matrix = encodeQr(value, errorCorrection);
   const size = matrix.length;
   const total = (size + margin * 2) * moduleSize;
   const modules = matrix.flatMap((row, rowIndex) => row.map((dark, columnIndex) => dark

@@ -51,25 +51,29 @@ function resultRows(result: { columns: string[]; values: SqlValue[][] } | undefi
 }
 
 function directSchemaContacts(database: InstanceType<Awaited<ReturnType<typeof loadSqlite>>["Database"]>) {
-  const contacts = resultRows(database.exec("SELECT * FROM contacts ORDER BY id")[0]).map((row, index) => ({
-    ...emptyContact(index),
-    id: `sqlite-${row.id || index + 1}`,
-    uid: row.uid ?? "",
-    formattedName: row.full_name ?? "",
-    firstName: row.first_name ?? "",
-    lastName: row.last_name ?? "",
-    nickname: row.nickname ?? "",
-    organisation: row.organisation ?? "",
-    department: row.department ?? "",
-    title: row.title ?? "",
-    role: row.role ?? "",
-    url: row.website ?? "",
-    birthday: row.birthday ?? "",
-    address: row.address ?? "",
-    note: row.note ?? "",
-    version: row.vcard_version === "2.1" || row.vcard_version === "4.0" ? row.vcard_version : "3.0",
-  } satisfies Contact));
-  const byId = new Map(contacts.map((contact, index) => [String(index + 1), contact]));
+  const byId = new Map<string, Contact>();
+  const contacts = resultRows(database.exec("SELECT * FROM contacts ORDER BY id")[0]).map((row, index) => {
+    const contact = {
+      ...emptyContact(index),
+      id: `sqlite-${row.id || index + 1}`,
+      uid: row.uid ?? "",
+      formattedName: row.full_name ?? "",
+      firstName: row.first_name ?? "",
+      lastName: row.last_name ?? "",
+      nickname: row.nickname ?? "",
+      organisation: row.organisation ?? "",
+      department: row.department ?? "",
+      title: row.title ?? "",
+      role: row.role ?? "",
+      url: row.website ?? "",
+      birthday: row.birthday ?? "",
+      address: row.address ?? "",
+      note: row.note ?? "",
+      version: row.vcard_version === "2.1" || row.vcard_version === "4.0" ? row.vcard_version : "3.0",
+    } satisfies Contact;
+    byId.set(row.id || String(index + 1), contact);
+    return contact;
+  });
   resultRows(database.exec("SELECT contact_id, value, type FROM phones ORDER BY contact_id, position")[0]).forEach((row) => { const contact = byId.get(row.contact_id); if (contact) { contact.phones.push(row.value); (contact.phoneTypes ??= []).push(row.type); } });
   resultRows(database.exec("SELECT contact_id, value, type FROM emails ORDER BY contact_id, position")[0]).forEach((row) => { const contact = byId.get(row.contact_id); if (contact) { contact.emails.push(row.value); (contact.emailTypes ??= []).push(row.type); } });
   resultRows(database.exec("SELECT contact_id, value FROM categories ORDER BY contact_id, position")[0]).forEach((row) => { const contact = byId.get(row.contact_id); if (contact) contact.categories.push(row.value); });
@@ -102,7 +106,7 @@ export async function sqliteToContacts(buffer: ArrayBuffer) {
       if (!contact.formattedName) contact.formattedName = [contact.firstName, contact.lastName].filter(Boolean).join(" ");
       return contact;
     });
-    const warnings = Object.values(mapping).every((value) => value === "ignore") ? ["No contact-like columns were recognised in the first table."] : [`Imported the first user table, “${tableName}”. Review the mapped contact preview before export.`];
+    const warnings = Object.values(mapping).every((value) => value === "ignore") ? ["No contact-like columns were recognized in the first table."] : [`Imported the first user table, “${tableName}”. Review the mapped contact preview before export.`];
     return { contacts, tableName, warnings };
   } finally {
     database.close();

@@ -3,7 +3,7 @@ import { normalizePhone } from "./contact-tools";
 
 export type FuzzyMatch = { left: Contact; right: Contact; score: number; reasons: string[] };
 
-function normalise(value: string) {
+function normalize(value: string) {
   return value.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim().replace(/\s+/g, " ");
 }
 
@@ -33,13 +33,13 @@ function jaroWinkler(left: string, right: string) {
   return jaro + prefix * 0.1 * (1 - jaro);
 }
 
-function label(contact: Contact) { return normalise(contact.formattedName || [contact.firstName, contact.lastName].filter(Boolean).join(" ")); }
+function label(contact: Contact) { return normalize(contact.formattedName || [contact.firstName, contact.lastName].filter(Boolean).join(" ")); }
 function emailParts(contact: Contact) { return contact.emails.map((email) => email.trim().toLowerCase().split("@")).filter((parts) => parts.length === 2); }
 
 function blockingKeys(contact: Contact) {
   const keys = new Set<string>(); const name = label(contact); const tokens = name.split(" ").filter(Boolean);
   if (tokens.length) { keys.add(`name:${tokens[0].slice(0, 3)}:${tokens.at(-1)?.slice(0, 3)}`); keys.add(`surname:${tokens.at(-1)?.slice(0, 4)}`); }
-  const organisation = normalise(contact.organisation); if (organisation) keys.add(`org:${organisation.slice(0, 6)}`);
+  const organisation = normalize(contact.organisation); if (organisation) keys.add(`org:${organisation.slice(0, 6)}`);
   contact.phones.forEach((phone) => { const digits = normalizePhone(phone).replace(/\D/g, ""); if (digits.length >= 7) keys.add(`phone:${digits.slice(-7)}`); });
   emailParts(contact).forEach(([local, domain]) => { keys.add(`domain:${domain}`); if (local.length >= 3) keys.add(`email:${local.slice(0, 4)}:${domain}`); });
   return keys;
@@ -50,14 +50,14 @@ function scorePair(left: Contact, right: Contact) {
   const leftPhones = new Set(left.phones.map((phone) => normalizePhone(phone).replace(/\D/g, "")).filter((value) => value.length >= 7));
   const sharedPhone = right.phones.some((phone) => leftPhones.has(normalizePhone(phone).replace(/\D/g, "")));
   const leftEmails = new Set(left.emails.map((email) => email.trim().toLowerCase())); const sharedEmail = right.emails.some((email) => leftEmails.has(email.trim().toLowerCase()));
-  const organisationScore = jaroWinkler(normalise(left.organisation), normalise(right.organisation));
+  const organisationScore = jaroWinkler(normalize(left.organisation), normalize(right.organisation));
   const leftEmailParts = emailParts(left); const rightEmailParts = emailParts(right);
   const emailSimilarity = Math.max(0, ...leftEmailParts.flatMap(([local, domain]) => rightEmailParts.filter(([, otherDomain]) => domain === otherDomain).map(([otherLocal]) => jaroWinkler(local, otherLocal))));
   let score = nameScore * 0.5 + organisationScore * 0.12 + emailSimilarity * 0.18;
   if (sharedPhone) { score += 0.42; reasons.push("same normalized phone"); }
   if (sharedEmail) { score += 0.48; reasons.push("same email address"); }
   if (nameScore >= 0.9) reasons.push("very similar names"); else if (nameScore >= 0.78) reasons.push("similar names");
-  if (organisationScore >= 0.88 && left.organisation && right.organisation) reasons.push("similar organisations");
+  if (organisationScore >= 0.88 && left.organisation && right.organisation) reasons.push("similar organizations");
   if (!sharedEmail && emailSimilarity >= 0.88) reasons.push("similar email names on the same domain");
   return { score: Math.min(1, score), reasons };
 }

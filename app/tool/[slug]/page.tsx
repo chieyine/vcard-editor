@@ -20,9 +20,9 @@ const contactToolDetails: Record<string, { title: string; description: string; m
   "remove-empty-contacts": { title: "Remove empty contacts", description: "Filter out cards with no useful contact data.", mode: "remove-empty" },
   "remove-contacts-without-phone": { title: "Remove contacts without phone numbers", description: "Keep only contacts containing at least one phone number.", mode: "without-phone" },
   "remove-contacts-without-email": { title: "Remove contacts without email", description: "Keep only contacts containing at least one email address.", mode: "without-email" },
-  "sort-vcf-contacts": { title: "Sort VCF contacts", description: "Sort contact cards by name, organisation, email, phone, or file order.", mode: "sort" },
+  "sort-vcf-contacts": { title: "Sort VCF contacts", description: "Sort contact cards by name, organization, email, phone, or file order.", mode: "sort" },
   "filter-vcf-contacts": { title: "Filter VCF contacts", description: "Keep contacts matching field-presence rules or a local search query.", mode: "filter" },
-  "count-vcf-contacts": { title: "Count VCF contacts", description: "Summarise contact count and useful fields locally.", mode: "count" },
+  "count-vcf-contacts": { title: "Count VCF contacts", description: "summarize contact count and useful fields locally.", mode: "count" },
   "vcf-field-frequency": { title: "VCF field frequency", description: "See how often common vCard fields appear in a file.", mode: "field-frequency" },
   "redact-vcard": { title: "Redact a VCF", description: "Create a reduced, shareable copy by removing selected private fields.", mode: "redact" },
   "strip-private-contact-fields": { title: "Strip private contact fields", description: "Remove notes, addresses, birthdays, photos, or URLs before sharing.", mode: "strip-private" },
@@ -35,7 +35,7 @@ const contactToolDetails: Record<string, { title: string; description: string; m
   "vcf-to-html": { title: "VCF to HTML", description: "Create a printable local HTML contact directory.", mode: "vcf-to-html" },
   "vcf-to-tsv": { title: "VCF to TSV", description: "Export contacts as tab-separated values for spreadsheets.", mode: "vcf-to-tsv" },
   "extract-addresses-from-vcf": { title: "Extract Addresses", description: "Export postal address values with contact names.", mode: "extract-addresses" },
-  "extract-companies-from-vcf": { title: "Extract Companies", description: "Export organisations, departments, and titles.", mode: "extract-companies" },
+  "extract-companies-from-vcf": { title: "Extract Companies", description: "Export organizations, departments, and titles.", mode: "extract-companies" },
   "extract-urls-from-vcf": { title: "Extract URLs", description: "Export website values without visiting them.", mode: "extract-urls" },
   "extract-birthdays-from-vcf": { title: "Extract Birthdays", description: "Export birthday values carefully as local data.", mode: "extract-birthdays" },
   "extract-notes-from-vcf": { title: "Extract Notes", description: "Export contact notes as a CSV.", mode: "extract-notes" },
@@ -46,14 +46,14 @@ const contactToolDetails: Record<string, { title: string; description: string; m
   "add-country-code-to-vcf": { title: "Add Country Code", description: "Add an explicit country code to national phone numbers.", mode: "add-country-code" },
   "remove-country-code-from-vcf": { title: "Remove Country Code", description: "Remove a specified country prefix from phone values.", mode: "remove-country-code" },
   "contact-quality-score": { title: "Contact Quality Score", description: "Report completeness signals without claiming contact truth.", mode: "quality-score" },
-  "group-contacts-by-company": { title: "Group Contacts by Company", description: "Summarise contact groups by organisation.", mode: "group-company" },
-  "group-contacts-by-email-domain": { title: "Group Contacts by Email Domain", description: "Summarise contact groups by email domain.", mode: "group-domain" },
+  "group-contacts-by-company": { title: "Group Contacts by Company", description: "summarize contact groups by organization.", mode: "group-company" },
+  "group-contacts-by-email-domain": { title: "Group Contacts by Email Domain", description: "summarize contact groups by email domain.", mode: "group-domain" },
   "vcf-field-inspector": { title: "VCF Field Inspector", description: "Inspect parsed properties, parameters, and unknown fields.", mode: "field-inspector" },
-  "vcf-file-analyzer": { title: "VCF File Analyser", description: "Summarise versions, fields, warnings, and file structure.", mode: "file-analyzer" },
-  "normalize-contact-organizations": { title: "Normalize Organisations", description: "Trim and collapse repeated whitespace in organisation fields.", mode: "normalize-organizations" },
+  "vcf-file-analyzer": { title: "VCF File Analyser", description: "summarize versions, fields, warnings, and file structure.", mode: "file-analyzer" },
+  "normalize-contact-organizations": { title: "Normalize Organizations", description: "Trim and collapse repeated whitespace in organization fields.", mode: "normalize-organizations" },
   "clean-vcard-notes": { title: "Clean Notes", description: "Remove control characters and normalize note whitespace.", mode: "clean-notes" },
   "shuffle-vcf-contacts": { title: "Shuffle VCF Contacts", description: "Randomize card order for synthetic or test files.", mode: "shuffle" },
-  "split-vcf-by-group": { title: "Split VCF by Group", description: "Create one VCF per category or organisation group.", mode: "split-group" },
+  "split-vcf-by-group": { title: "Split VCF by Group", description: "Create one VCF per category or organization group.", mode: "split-group" },
   "change-vcard-phone-type": { title: "Change Phone Type", description: "Reclassify all phone values with an explicit type.", mode: "change-phone-type" },
   "change-vcard-email-type": { title: "Change Email Type", description: "Reclassify all email values with an explicit type.", mode: "change-email-type" },
   "extract-vcf-photos": { title: "Extract Contact Photos", description: "Export embedded photo values with contact names.", mode: "extract-photos" },
@@ -81,7 +81,7 @@ const specialToolDetails: Record<string, { title: string; description: string; k
   "combine-contact-files": { title: "Combine Contact Files", description: "Combine multiple local VCF files into one output.", kind: "contact", mode: "merge" },
   "compress-vcard-photos": { title: "Compress Contact Photos", description: "Resize validated embedded photos locally with reviewable limits.", kind: "photo", mode: "compress" },
   "extract-vcf-photos": { title: "Extract Contact Photos", description: "Extract validated embedded images into a local ZIP.", kind: "photo", mode: "extract" },
-  "fuzzy-contact-matcher": { title: "Fuzzy Contact Matcher", description: "Review bounded similarity scores for names, organisations, phones, and emails.", kind: "fuzzy" },
+  "fuzzy-contact-matcher": { title: "Fuzzy Contact Matcher", description: "Review bounded similarity scores for names, organizations, phones, and emails.", kind: "fuzzy" },
   "vcf-to-sqlite": { title: "VCF to SQLite", description: "Create a real local SQLite contact database.", kind: "sqlite", mode: "to-sqlite" },
   "sqlite-to-vcf": { title: "SQLite to VCF", description: "Read a local SQLite table and export mapped vCards.", kind: "sqlite", mode: "from-sqlite" },
 };
@@ -106,7 +106,7 @@ export function generateMetadata({ params }: { params: Promise<{ slug: string }>
     const entry = details[slug as ExpansionSlug] ?? contactToolDetails[slug] ?? textToolDetails[slug] ?? specialToolDetails[slug];
     if (!entry) return {};
     const title = `${entry.title} — vCard Editor`;
-    return { title, description: entry.description, alternates: { canonical: `/tool/${slug}` }, openGraph: { title, description: entry.description, type: "website", url: `/tool/${slug}`, images: [{ url: "/opengraph-image", alt: `${entry.title} — vCard Editor` }] }, twitter: { card: "summary_large_image", title, description: entry.description, images: ["/opengraph-image"] } };
+    return { title, description: entry.description, alternates: { canonical: `/tool/${slug}` }, openGraph: { title, description: entry.description, type: "website", url: `/tool/${slug}`, images: [{ url: `/tool/${slug}/opengraph-image`, alt: `${entry.title} — vCard Editor` }] }, twitter: { card: "summary_large_image", title, description: entry.description, images: [`/tool/${slug}/opengraph-image`] } };
   });
 }
 

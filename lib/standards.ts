@@ -91,14 +91,66 @@ export function xCardToContacts(input: string) {
   });
 }
 
+function toBase64(value: string) {
+  const bytes = new TextEncoder().encode(value);
+  let binary = "";
+  for (let index = 0; index < bytes.length; index += 0x8000) binary += String.fromCharCode(...bytes.subarray(index, index + 0x8000));
+  return btoa(binary);
+}
+
+function fromBase64(value: string) {
+  const bytes = Uint8Array.from(atob(value), (character) => character.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
+}
+
+function ldifProperty(name: string, value: string) {
+  const unsafe = /[^\x20-\x7e]/.test(value) || /^[ :<]/.test(value) || / $/.test(value);
+  return unsafe ? `${name}:: ${toBase64(value)}` : `${name}: ${value}`;
+}
+
+function foldLdifLine(line: string) {
+  if (line.length <= 78) return [line];
+  const parts = [line.slice(0, 78)];
+  let rest = line.slice(78);
+  while (rest.length > 77) { parts.push(` ${rest.slice(0, 77)}`); rest = rest.slice(77); }
+  if (rest) parts.push(` ${rest}`);
+  return parts;
+}
+
+function unfoldLdifEntry(entry: string) {
+  return entry.split(/\r\n|\n|\r/).reduce<string[]>((lines, line) => {
+    if (/^ /.test(line) && lines.length) lines[lines.length - 1] += line.slice(1);
+    else lines.push(line);
+    return lines;
+  }, []).join("\n");
+}
+
 export function contactsToLdif(contacts: Contact[]) {
-  return contacts.map((contact) => [`dn: uid=${contact.uid || contact.id},dc=contacts`, "objectClass: top", "objectClass: inetOrgPerson", `cn: ${contact.formattedName}`, `sn: ${contact.lastName}`, `givenName: ${contact.firstName}`, ...contact.phones.map((phone) => `telephoneNumber: ${phone}`), ...contact.emails.map((email) => `mail: ${email}`), ...(contact.organisation ? [`o: ${contact.organisation}`] : []), ...(contact.title ? [`title: ${contact.title}`] : []), ...(contact.note ? [`description: ${contact.note}`] : [])].join("\n")).join("\n\n");
+  return contacts.map((contact) => {
+    const fields: [string, string][] = [
+      ["dn", `uid=${contact.uid || contact.id},dc=contacts`],
+      ["objectClass", "top"],
+      ["objectClass", "inetOrgPerson"],
+      ["cn", contact.formattedName],
+      ["sn", contact.lastName],
+      ["givenName", contact.firstName],
+      ...contact.phones.map((phone): [string, string] => ["telephoneNumber", phone]),
+      ...contact.emails.map((email): [string, string] => ["mail", email]),
+    ];
+    if (contact.organisation) fields.push(["o", contact.organisation]);
+    if (contact.title) fields.push(["title", contact.title]);
+    if (contact.note) fields.push(["description", contact.note]);
+    return fields.flatMap(([name, value]) => foldLdifLine(ldifProperty(name, value))).join("\n");
+  }).join("\n\n");
 }
 
 export function ldifToContacts(input: string) {
   return input.split(/\n\s*\n/).map((entry, index) => {
-    const values = (key: string) => [...entry.matchAll(new RegExp(`^${key}:\\s*(.*)$`, "gmi"))].map((match) => match[1].trim());
-    const uid = (values("uid")[0] || entry.match(/^dn:\s*uid=([^,]+)/im)?.[1] || `contact-${index + 1}`);
+    const unfolded = unfoldLdifEntry(entry);
+    const values = (key: string) => [...unfolded.matchAll(new RegExp(`^${key}(::|:)\\s*(.*)$`, "gmi"))].map((match) => match[1] === "::" ? fromBase64(match[2].replace(/\s+/g, "")) : match[2].trim());
+    const dnMatch = unfolded.match(/^dn(::|:)\s*(.*)$/im);
+    const dn = dnMatch ? (dnMatch[1] === "::" ? fromBase64(dnMatch[2].replace(/\s+/g, "")) : dnMatch[2].trim()) : "";
+    const uid = (values("uid")[0] || dn.match(/^uid=([^,]+)/)?.[1] || `contact-${index + 1}`);
     const firstName = values("givenName")[0] || "";
     const lastName = values("sn")[0] || "";
     return { id: uid, version: "3.0" as const, firstName, lastName, formattedName: values("cn")[0] || [firstName, lastName].filter(Boolean).join(" "), phones: values("telephoneNumber"), emails: values("mail"), organisation: values("o")[0] || "", title: values("title")[0] || "", note: values("description")[0] || "", uid, categories: [], photo: "", rawProperties: [], properties: [], issues: [] };

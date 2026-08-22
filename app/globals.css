@@ -455,3 +455,13 @@ h1 em { color: var(--green); font-family: Georgia, 'Times New Roman', serif; fon
 @media (max-width: 620px) { .privacy-pill { display: none; } .mobile-menu { display: block; } .toolbar-actions, .bulk-actions { flex-wrap: wrap; } .contacts-scroll { display: block; max-height: 250px; } .contact-row { min-width: 0; } .mapping-grid { grid-template-columns: 1fr; } .contact-preview-grid { grid-template-columns: 1fr; } .photo-grid { grid-template-columns: repeat(2, 1fr); } .match-list article > div { grid-template-columns: 1fr; } .match-list article b { min-height: 28px; transform: rotate(90deg); } .repeatable-row { grid-template-columns: minmax(0,1fr) 86px 34px; } .site-footer span:last-child { flex-wrap: wrap; } }
 @media (max-width: 620px) { .home-categories, .guide-preview, .compatibility-overview { padding: 68px 20px; } .category-grid, .guide-preview-grid, .compatibility-grid { grid-template-columns: 1fr; } .privacy-story { padding: 70px 20px; } .privacy-story h2 { font-size: 34px; } .privacy-flow { grid-template-columns: 1fr; } .privacy-flow small { grid-column: 1; } .privacy-flow b { transform: rotate(90deg); } .portfolio-link { align-items: flex-start; flex-direction: column; margin: 0 20px 70px; padding: 27px 22px; } .portfolio-link h2 { font-size: 24px; } .portfolio-link .primary-button { width: 100%; } }
 @media (max-width: 620px) { .tool-supporting { margin-top: 52px; padding-top: 42px; } .tool-supporting-grid, .tool-supporting-notes, .tool-supporting-links { grid-template-columns: 1fr; } .tool-supporting-notes { gap: 28px; padding: 19px; } }
+
+/* Primary duplicate pick + bulk find/replace + column picker */
+.primary-pick { display: flex; flex-direction: column; gap: 5px; margin-top: 10px; font-size: 12px; font-weight: 600; color: #5f7069; }
+.primary-pick select { max-width: 300px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 8px; background: #fff; font-size: 13px; }
+.bulk-actions input[type="text"] { min-width: 120px; max-width: 180px; padding: 8px 11px; border: 1px solid var(--line); border-radius: 9px; background: #fff; font-size: 13px; }
+.column-picker { margin-bottom: 14px; border: 1px solid var(--line); border-radius: 10px; background: #fff; padding: 10px 14px; font-size: 13px; }
+.column-picker summary { cursor: pointer; font-weight: 600; color: #3d524a; }
+.column-picker .mapping-grid { margin-top: 12px; }
+.address-fields { border: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.address-fields legend { font-size: 12px; font-weight: 600; color: #5f7069; padding: 0; margin-bottom: 8px; }

@@ -5,15 +5,15 @@ export type ContactColumn = "firstName" | "lastName" | "formattedName" | "nickna
 export type TabularRow = Record<string, string>;
 
 export const CONTACT_COLUMNS: { key: ContactColumn; label: string }[] = [
-  { key: "firstName", label: "First name" }, { key: "lastName", label: "Last name" }, { key: "formattedName", label: "Full name" }, { key: "nickname", label: "Nickname" }, { key: "phone", label: "Phone" }, { key: "email", label: "Email" }, { key: "organisation", label: "Organisation" }, { key: "department", label: "Department" }, { key: "title", label: "Job title" }, { key: "role", label: "Role" }, { key: "url", label: "Website" }, { key: "birthday", label: "Birthday" }, { key: "address", label: "Address" }, { key: "note", label: "Note" }, { key: "uid", label: "UID" }, { key: "categories", label: "Categories" },
+  { key: "firstName", label: "First name" }, { key: "lastName", label: "Last name" }, { key: "formattedName", label: "Full name" }, { key: "nickname", label: "Nickname" }, { key: "phone", label: "Phone" }, { key: "email", label: "Email" }, { key: "organisation", label: "Organization" }, { key: "department", label: "Department" }, { key: "title", label: "Job title" }, { key: "role", label: "Role" }, { key: "url", label: "Website" }, { key: "birthday", label: "Birthday" }, { key: "address", label: "Address" }, { key: "note", label: "Note" }, { key: "uid", label: "UID" }, { key: "categories", label: "Categories" },
 ];
 
-function normaliseHeader(header: string) { return header.toLowerCase().replace(/[_.-]+/g, " ").replace(/\s+/g, " ").trim(); }
+function normalizeHeader(header: string) { return header.toLowerCase().replace(/[_.-]+/g, " ").replace(/\s+/g, " ").trim(); }
 
 export function suggestMapping(headers: string[]) {
   const mapping: Record<string, ContactColumn | "ignore"> = {};
   headers.forEach((header) => {
-    const value = normaliseHeader(header);
+    const value = normalizeHeader(header);
     if (/^(first|given) name$|^firstname$|^givenname$/.test(value)) mapping[header] = "firstName";
     else if (/^(last|family|sur) name$|^lastname$|^surname$/.test(value)) mapping[header] = "lastName";
     else if (/^(full|display|formatted) name$|^name$|^fn$/.test(value)) mapping[header] = "formattedName";
@@ -37,7 +37,7 @@ export function suggestMapping(headers: string[]) {
 
 export function contactsToRows(contacts: Contact[]): TabularRow[] {
   return contacts.map((contact) => {
-    const row: TabularRow = { "First name": contact.firstName, "Last name": contact.lastName, "Full name": contact.formattedName, Nickname: contact.nickname ?? "", Phone: contact.phones[0] ?? "", Email: contact.emails[0] ?? "", Organisation: contact.organisation, Department: contact.department ?? "", "Job title": contact.title, Role: contact.role ?? "", Website: contact.url ?? "", Birthday: contact.birthday ?? "", Address: contact.address ?? "", Note: contact.note, UID: contact.uid, Categories: contact.categories.join(", ") };
+    const row: TabularRow = { "First name": contact.firstName, "Last name": contact.lastName, "Full name": contact.formattedName, Nickname: contact.nickname ?? "", Phone: contact.phones[0] ?? "", Email: contact.emails[0] ?? "", Organization: contact.organisation, Department: contact.department ?? "", "Job title": contact.title, Role: contact.role ?? "", Website: contact.url ?? "", Birthday: contact.birthday ?? "", Address: contact.address ?? "", Note: contact.note, UID: contact.uid, Categories: contact.categories.join(", ") };
     contact.phones.slice(1).forEach((phone, index) => { row[`Phone ${index + 2}`] = phone; });
     contact.emails.slice(1).forEach((email, index) => { row[`Email ${index + 2}`] = email; });
     return row;
@@ -45,18 +45,18 @@ export function contactsToRows(contacts: Contact[]): TabularRow[] {
 }
 
 function csvSafe(value: string) {
-  const normalised = String(value ?? "").replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, "");
+  const normalized = String(value ?? "").replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, "");
   // Prefix formula-like cells so opening the CSV in a spreadsheet cannot execute them.
-  const safe = /^[=+\-@]/.test(normalised) ? `'${normalised}` : normalised;
+  const safe = /^[=+\-@]/.test(normalized) ? `'${normalized}` : normalized;
   return /[",\r\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
 }
 
 function spreadsheetSafe(value: string) {
-  const normalised = String(value ?? "").replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, "");
+  const normalized = String(value ?? "").replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, "");
   // Keep international phone numbers usable while visibly neutralising values
   // that another spreadsheet program could later reinterpret as formulas.
-  const internationalPhone = /^\+[\d\s().-]+$/.test(normalised);
-  return !internationalPhone && /^[=+\-@]/.test(normalised) ? `'${normalised}` : normalised;
+  const internationalPhone = /^\+[\d\s().-]+$/.test(normalized);
+  return !internationalPhone && /^[=+\-@]/.test(normalized) ? `'${normalized}` : normalized;
 }
 
 export function rowsToCsv(rows: TabularRow[]) {

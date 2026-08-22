@@ -43,10 +43,10 @@ export function findDuplicateGroups(contacts: Contact[]): DuplicateGroup[] {
   return groups.sort((a, b) => (a.confidence === "high" ? -1 : 1) - (b.confidence === "high" ? -1 : 1));
 }
 
-export function mergeContactGroup(contacts: Contact[], ids: string[]) {
+export function mergeContactGroup(contacts: Contact[], ids: string[], primaryId?: string) {
   const members = contacts.filter((contact) => ids.includes(contact.id));
   if (members.length < 2) return contacts;
-  const first = members[0];
+  const first = primaryId ? (members.find((member) => member.id === primaryId) ?? members[0]) : members[0];
   const merged: Contact = { ...first, phones: [...first.phones], emails: [...first.emails], categories: [...first.categories], properties: [...first.properties], issues: [...first.issues] };
   members.slice(1).forEach((member) => {
     if (!merged.firstName) merged.firstName = member.firstName;
@@ -75,29 +75,38 @@ export function cleanContacts(contacts: Contact[], options: CleanerOptions) {
   let changed = 0;
   let next = contacts.map((contact) => {
     const cleaned: Contact = { ...contact, phones: [...contact.phones], emails: [...contact.emails], categories: [...contact.categories] };
+    let dirty = false;
     if (options.trimWhitespace) {
       const before = JSON.stringify([cleaned.firstName, cleaned.lastName, cleaned.formattedName, cleaned.organisation, cleaned.title, cleaned.note]);
       cleaned.firstName = cleaned.firstName.trim(); cleaned.lastName = cleaned.lastName.trim(); cleaned.formattedName = cleaned.formattedName.trim(); cleaned.organisation = cleaned.organisation.trim(); cleaned.title = cleaned.title.trim(); cleaned.note = cleaned.note.trim();
       cleaned.phones = cleaned.phones.map((value) => value.trim()); cleaned.emails = cleaned.emails.map((value) => value.trim());
-      if (before !== JSON.stringify([cleaned.firstName, cleaned.lastName, cleaned.formattedName, cleaned.organisation, cleaned.title, cleaned.note])) changed += 1;
+      if (before !== JSON.stringify([cleaned.firstName, cleaned.lastName, cleaned.formattedName, cleaned.organisation, cleaned.title, cleaned.note])) dirty = true;
     }
-    if (options.normalizeEmails) cleaned.emails = cleaned.emails.map(normalizedEmail);
-    if (options.normalizePhones) cleaned.phones = cleaned.phones.map((phone) => normalizePhone(phone, options.countryCode));
-    if (options.removePhotos && cleaned.photo) { cleaned.photo = ""; changed += 1; }
+    if (options.normalizeEmails) { const before = JSON.stringify(cleaned.emails); cleaned.emails = cleaned.emails.map(normalizedEmail); if (before !== JSON.stringify(cleaned.emails)) dirty = true; }
+    if (options.normalizePhones) { const before = JSON.stringify(cleaned.phones); cleaned.phones = cleaned.phones.map((phone) => normalizePhone(phone, options.countryCode)); if (before !== JSON.stringify(cleaned.phones)) dirty = true; }
+    if (options.removePhotos && cleaned.photo) { cleaned.photo = ""; dirty = true; }
+    if (dirty) changed += 1;
     return cleaned;
   });
   if (options.removeEmpty) next = next.filter((contact) => contact.formattedName || contact.firstName || contact.lastName || contact.phones.length || contact.emails.length || contact.organisation);
   return { contacts: next, changed };
 }
 
-export function validateContacts(contacts: Contact[], parseResult?: ParseResult): ValidationIssue[] {
+export function validateContacts(contacts: Contact[], parseResult?: ParseResult, options?: { strict?: boolean }): ValidationIssue[] {
+  const strict = options?.strict === true;
   const issues: ValidationIssue[] = parseResult?.issues ? [...parseResult.issues] : [];
-  contacts.forEach((contact, index) => {
-    contact.emails.forEach((email) => { if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) issues.push({ code: "INVALID_EMAIL", severity: "warning", message: `${contactLabel(contact)} has an email address with an unusual format.`, property: "EMAIL", line: index + 1 }); });
+  contacts.forEach((contact) => {
+    contact.emails.forEach((email) => { if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) issues.push({ code: "INVALID_EMAIL", severity: "warning", message: `${contactLabel(contact)} has an email address with an unusual format.`, property: "EMAIL" }); });
     if (!contact.formattedName && !contact.firstName && !contact.lastName && !contact.phones.length && !contact.emails.length) issues.push({ code: "EMPTY_CONTACT", severity: "warning", message: `${contactLabel(contact)} has no useful contact fields.`, property: "FN" });
     if (contact.version === "unknown") issues.push({ code: "UNKNOWN_VERSION", severity: "warning", message: `${contactLabel(contact)} has an unknown vCard version.`, property: "VERSION" });
+    if (strict) {
+      if (!contact.formattedName) issues.push({ code: "REQUIRED_FN", severity: "error", message: `${contactLabel(contact)} has no FN property; vCard 3.0 and 4.0 require it.`, property: "FN" });
+      if (!contact.firstName && !contact.lastName) issues.push({ code: "MISSING_N", severity: "warning", message: `${contactLabel(contact)} has no structured N name parts.`, property: "N" });
+    }
   });
-  return issues;
+  if (!strict) return issues;
+  // Escalate structural violations without mutating the shared issue objects.
+  return issues.map((issue) => issue.code === "MISSING_VERSION" || issue.code === "MISSING_FN" ? { ...issue, severity: "error" as const } : issue);
 }
 
 export function repairVCardText(text: string, targetVersion: KnownVCardVersion = "3.0") {
@@ -107,7 +116,7 @@ export function repairVCardText(text: string, targetVersion: KnownVCardVersion =
   const repairs: string[] = [];
   if (beginCount > endCount) { repaired += `${"\r\nEND:VCARD".repeat(beginCount - endCount)}\r\n`; repairs.push(`Added ${beginCount - endCount} missing END:VCARD marker${beginCount - endCount === 1 ? "" : "s"}.`); }
   if (text.startsWith("\uFEFF")) repairs.push("Removed the byte-order mark before parsing.");
-  if (/\r(?!\n)|(?<!\r)\n/.test(text)) repairs.push("Normalised mixed line endings to CRLF.");
+  if (/\r(?!\n)|(?<!\r)\n/.test(text)) repairs.push("normalized mixed line endings to CRLF.");
   const parsed = parseVCard(repaired);
   const output = serializeVCards(parsed.contacts, { version: targetVersion, preserveUnknown: true, includePhotos: true, lineEnding: "CRLF" });
   repairs.push(`Re-serialised ${parsed.contacts.length} contact${parsed.contacts.length === 1 ? "" : "s"} with vCard ${targetVersion}.`);
@@ -115,7 +124,7 @@ export function repairVCardText(text: string, targetVersion: KnownVCardVersion =
 }
 
 export function extractValues(contacts: Contact[], kind: "phones" | "emails") {
-  return contacts.flatMap((contact) => contact[kind].filter(Boolean).map((value) => ({ Value: value, Type: kind === "phones" ? "Phone" : "Email", Contact: contactLabel(contact), Organisation: contact.organisation })));
+  return contacts.flatMap((contact) => contact[kind].filter(Boolean).map((value) => ({ Value: value, Type: kind === "phones" ? "Phone" : "Email", Contact: contactLabel(contact), Organization: contact.organisation })));
 }
 
 export type ExtractionKind = "phones" | "emails" | "addresses" | "companies" | "urls" | "birthdays" | "notes" | "extensions" | "photos";
@@ -123,7 +132,7 @@ export type ExtractionKind = "phones" | "emails" | "addresses" | "companies" | "
 export function extractFieldValues(contacts: Contact[], kind: ExtractionKind) {
   return contacts.flatMap((contact) => {
     const values = kind === "phones" ? contact.phones : kind === "emails" ? contact.emails : kind === "addresses" ? [contact.address ?? ""] : kind === "companies" ? [contact.organisation, contact.department ?? "", contact.title].filter(Boolean) : kind === "urls" ? [contact.url ?? ""] : kind === "birthdays" ? [contact.birthday ?? ""] : kind === "notes" ? [contact.note] : kind === "photos" ? [contact.photo] : contact.properties.filter((property) => property.name.startsWith("X-")).map((property) => `${property.name}: ${property.value}`);
-    return values.filter(Boolean).map((value) => ({ Value: value, Type: kind, Contact: contactLabel(contact), Organisation: contact.organisation }));
+    return values.filter(Boolean).map((value) => ({ Value: value, Type: kind, Contact: contactLabel(contact), Organization: contact.organisation }));
   });
 }
 
@@ -187,12 +196,12 @@ export function findDuplicateValueGroups(contacts: Contact[], kind: "phone" | "e
 export function normalizeOrganizations(contacts: Contact[]) { return contacts.map((contact) => ({ ...contact, organisation: contact.organisation.trim().replace(/\s+/g, " "), department: contact.department?.trim().replace(/\s+/g, " ") })); }
 export function cleanNotes(contacts: Contact[]) { return contacts.map((contact) => ({ ...contact, note: contact.note.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, "").replace(/\s+/g, " ").trim() })); }
 export function addCountryCode(contacts: Contact[], countryCode: string) { return contacts.map((contact) => ({ ...contact, phones: contact.phones.map((phone) => normalizePhone(phone, countryCode)) })); }
-export function removeCountryCode(contacts: Contact[], countryCode: string) { const prefix = countryCode.replace(/\D/g, ""); return contacts.map((contact) => ({ ...contact, phones: contact.phones.map((phone) => { const value = phone.trim(); const digits = value.replace(/\D/g, ""); return digits.startsWith(prefix) ? digits.slice(prefix.length).replace(/^/, "0") : value; }) })); }
+export function removeCountryCode(contacts: Contact[], countryCode: string) { const prefix = countryCode.replace(/\D/g, ""); if (!prefix) return contacts; return contacts.map((contact) => ({ ...contact, phones: contact.phones.map((phone) => { const value = phone.trim(); const digits = value.replace(/\D/g, ""); return digits.startsWith(prefix) ? digits.slice(prefix.length).replace(/^/, "0") : value; }) })); }
 export function shuffleContacts(contacts: Contact[]) { const output = [...contacts]; for (let index = output.length - 1; index > 0; index -= 1) { const swap = Math.floor(Math.random() * (index + 1)); [output[index], output[swap]] = [output[swap], output[index]]; } return output; }
 export function groupContactValues(contacts: Contact[], kind: "company" | "domain") { const groups = new Map<string, string[]>(); contacts.forEach((contact) => { const values = kind === "company" ? [contact.organisation.trim() || "(no organisation)"] : [...new Set(contact.emails.map((email) => email.split("@")[1]?.toLowerCase()).filter(Boolean))]; (values.length ? values : ["(no email domain)"]).forEach((value) => groups.set(value, [...(groups.get(value) ?? []), contact.id])); }); return [...groups.entries()].map(([value, ids]) => ({ value, ids, count: ids.length })).sort((a, b) => b.count - a.count); }
 
 export function contactsToText(contacts: Contact[]) {
-  return contacts.map((contact) => [contactLabel(contact), ...contact.phones.map((phone) => `Phone: ${phone}`), ...contact.emails.map((email) => `Email: ${email}`), contact.organisation && `Organisation: ${contact.organisation}`, contact.title && `Title: ${contact.title}`, contact.note && `Note: ${contact.note}`].filter(Boolean).join("\n")).join("\n\n") + (contacts.length ? "\n" : "");
+  return contacts.map((contact) => [contactLabel(contact), ...contact.phones.map((phone) => `Phone: ${phone}`), ...contact.emails.map((email) => `Email: ${email}`), contact.organisation && `Organization: ${contact.organisation}`, contact.title && `Title: ${contact.title}`, contact.note && `Note: ${contact.note}`].filter(Boolean).join("\n")).join("\n\n") + (contacts.length ? "\n" : "");
 }
 
 export function contactsToHtml(contacts: Contact[]) {
@@ -202,7 +211,7 @@ export function contactsToHtml(contacts: Contact[]) {
 }
 
 export function contactsToTsv(contacts: Contact[]) {
-  const headers = ["Full Name", "First Name", "Last Name", "Phone", "Email", "Organisation", "Title", "Note"];
+  const headers = ["Full Name", "First Name", "Last Name", "Phone", "Email", "Organization", "Title", "Note"];
   const safe = (value: string) => value.replace(/[\t\r\n]/g, " ");
   return [headers.join("\t"), ...contacts.map((contact) => [contactLabel(contact), contact.firstName, contact.lastName, contact.phones[0] ?? "", contact.emails[0] ?? "", contact.organisation, contact.title, contact.note].map(safe).join("\t"))].join("\r\n") + "\r\n";
 }

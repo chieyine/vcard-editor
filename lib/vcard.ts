@@ -55,7 +55,7 @@ export type ParseResult = {
   issues: ValidationIssue[];
   versions: Record<string, number>;
   lineEnding: "CRLF" | "LF" | "CR" | "mixed";
-  encoding: "UTF-8" | "UTF-16LE" | "UTF-16BE" | "unknown";
+  encoding: "UTF-8" | "UTF-16LE" | "UTF-16BE" | "Windows-1252" | "unknown";
   totalLines: number;
 };
 
@@ -84,7 +84,7 @@ function splitEscaped(value: string, delimiter: string) {
 }
 
 function unescapeValue(value: string) {
-  return value.replace(/\\n/gi, "\n").replace(/\\,/g, ",").replace(/\\;/g, ";").replace(/\\\\/g, "\\");
+  return value.replace(/\\(\\|n|,|;)/gi, (_, character: string) => character.toLowerCase() === "n" ? "\n" : character);
 }
 
 function escapeValue(value: string) {
@@ -250,13 +250,30 @@ export function decodeVCardBytes(bytes: ArrayBuffer): { text: string; encoding: 
   if (view[0] === 0xff && view[1] === 0xfe) return { text: new TextDecoder("utf-16le").decode(view.slice(2)), encoding: "UTF-16LE" };
   if (view[0] === 0xfe && view[1] === 0xff) return { text: new TextDecoder("utf-16be").decode(view.slice(2)), encoding: "UTF-16BE" };
   if (view[0] === 0xef && view[1] === 0xbb && view[2] === 0xbf) return { text: new TextDecoder("utf-8").decode(view), encoding: "UTF-8" };
-  return { text: new TextDecoder("utf-8", { fatal: false }).decode(view), encoding: "UTF-8" };
+  try {
+    return { text: new TextDecoder("utf-8", { fatal: true }).decode(view), encoding: "UTF-8" };
+  } catch {
+    // Bytes that are not valid UTF-8 almost always come from legacy Windows
+    // exports; decoding them as Windows-1252 keeps accented names readable.
+    return { text: new TextDecoder("windows-1252").decode(view), encoding: "Windows-1252" };
+  }
+}
+
+function utf8Size(character: string) {
+  const codePoint = character.codePointAt(0) ?? 0;
+  return codePoint < 0x80 ? 1 : codePoint < 0x800 ? 2 : codePoint < 0x10000 ? 3 : 4;
+}
+
+function utf8Length(value: string) {
+  let total = 0;
+  for (const character of value) total += utf8Size(character);
+  return total;
 }
 
 function utf8Prefix(value: string, byteLimit: number) {
   let bytes = 0; let end = 0;
   for (const character of value) {
-    const size = new TextEncoder().encode(character).length;
+    const size = utf8Size(character);
     if (bytes + size > byteLimit) break;
     bytes += size; end += character.length;
   }
@@ -264,7 +281,7 @@ function utf8Prefix(value: string, byteLimit: number) {
 }
 
 function foldLine(line: string) {
-  if (new TextEncoder().encode(line).length <= 75) return [line];
+  if (utf8Length(line) <= 75) return [line];
   const folded: string[] = []; let remaining = line; let firstLine = true;
   while (remaining) {
     const limit = firstLine ? 75 : 74;

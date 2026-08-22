@@ -41,7 +41,7 @@ const guide = (page: ContentDraft): ContentPage => ({
 });
 const format = (page: ContentDraft): ContentPage => ({ ...page, eyebrow: "FORMAT REFERENCE", lastReviewed: reviewed, sources: page.sources ?? [officialSources.rfc6350] });
 const platform = (page: ContentDraft): ContentPage => ({ ...page, eyebrow: "PLATFORM WORKFLOW", lastReviewed: reviewed, sources: page.sources ?? platformSources(page.title) });
-const platformWorkflow = (slug: string, title: string, description: string, intro: string, targetTool: string, steps: string[]): ContentPage => platform({ slug, title, metaTitle: `${title} | vCard Editor`, description, intro, targetTool, sections: [{ heading: "A safe local workflow", paragraphs: [`For ${title}, keep the original export unchanged and start with a small synthetic or copied dataset. Platform screens and field support can vary by version.`], steps }, { heading: "Verify after import", paragraphs: [`After ${title}, spot-check names, international phone numbers, multiple emails, organisations, notes, and photos. This page provides preparation guidance and does not claim live platform compatibility until a dated test is recorded.`] }], related: [{ label: "Validate the result", href: "/tool/vcf-validator" }, { label: "Open all tools", href: "/tools" }] });
+const platformWorkflow = (slug: string, title: string, description: string, intro: string, targetTool: string, steps: string[]): ContentPage => platform({ slug, title, metaTitle: `${title} | vCard Editor`, description, intro, targetTool, sections: [{ heading: "A safe local workflow", paragraphs: [`For ${title}, keep the original export unchanged and start with a small synthetic or copied dataset. Platform screens and field support can vary by version.`], steps }, { heading: "Verify after import", paragraphs: [`After ${title}, spot-check names, international phone numbers, multiple emails, organizations, notes, and photos. This page provides preparation guidance and does not claim live platform compatibility until a dated test is recorded.`] }], related: [{ label: "Validate the result", href: "/tool/vcf-validator" }, { label: "Open all tools", href: "/tools" }] });
 
 const requiredGuides: ContentPage[] = [
   guide({ slug: "what-is-a-vcf-file", title: "What Is a VCF File?", metaTitle: "What Is a VCF File? Contact Backup Format Explained", description: "Learn what VCF and vCard files contain, how multi-contact files work, and when to use a viewer or editor.", intro: "A VCF file is a plain-text contact file that stores one or more vCards. Phones, email clients, address books, and migration tools use it to move contact details between systems.", targetTool: "/tool/vcf-viewer", sections: [{ heading: "What a vCard can contain", paragraphs: ["A card commonly contains a formatted name, structured name parts, phone numbers, email addresses, organisation, title, notes, categories, a UID, and sometimes a photo. Different applications support different subsets." ]}, { heading: "One file can hold many contacts", paragraphs: ["A file can contain repeated BEGIN:VCARD and END:VCARD blocks. Some older importers expect one card per file, which is why splitting or merging may be necessary." ]}, { heading: "Use the right tool", paragraphs: ["Use the viewer to inspect a file without changing it, the editor to correct fields, and the validator before importing into another address book." ]}], related: [{ label: "Open the VCF viewer", href: "/tool/vcf-viewer" }, { label: "Validate a VCF", href: "/tool/vcf-validator" }] }),
@@ -109,7 +109,7 @@ const launchArticles: ContentPage[] = [
   }),
   article({
     slug: "convert-csv-to-vcf-field-mapping", title: "How to Convert CSV to VCF with Correct Field Mapping", metaTitle: "Convert CSV to VCF with Correct Field Mapping", description: "Map spreadsheet columns to vCard fields without guessing at names, phones, or emails.", intro: "A good CSV-to-VCF conversion is a mapping exercise: one row becomes one card, and each column is assigned to a known contact property.", targetTool: "/tool/csv-to-vcf", sections: [
-      { heading: "Start with a clean header row", paragraphs: ["Use one header row and one contact per row. Keep names, phone numbers, emails, and organisation columns separate so a mapping preset can be reviewed rather than inferred from a single combined cell."] },
+      { heading: "Start with a clean header row", paragraphs: ["Use one header row and one contact per row. Keep names, phone numbers, emails, and organization columns separate so a mapping preset can be reviewed rather than inferred from a single combined cell."] },
       { heading: "Map the fields that matter", paragraphs: ["Map first and last names to N, a display name to FN when available, phone columns to TEL, email columns to EMAIL, and company or role to ORG and TITLE. Keep unknown columns outside the import until you decide how to represent them."], steps: ["Choose the CSV copy.", "Select a generic, Google, or Outlook mapping preset.", "Review every mapped column in the preview.", "Download and validate the generated VCF."] },
       { heading: "Check loss before import", paragraphs: ["Compare a sample row with its generated card, especially for multiple phones, accented names, notes, and international prefixes. If a field has no vCard equivalent in the selected version, preserve the CSV separately."] },
     ], related: [{ label: "CSV to VCF", href: "/tool/csv-to-vcf" }, { label: "Validate the generated VCF", href: "/tool/vcf-validator" }], sources: [officialSources.rfc2426, officialSources.rfc6350]
@@ -215,7 +215,7 @@ const launchArticles: ContentPage[] = [
   article({
     slug: "missing-begin-end-vcard-lines", title: "How to Fix Missing BEGIN:VCARD or END:VCARD Lines", metaTitle: "Fix Missing BEGIN:VCARD or END:VCARD Lines", description: "Find incomplete vCard blocks and repair a copy before attempting another import.", intro: "Every vCard block needs a BEGIN:VCARD and END:VCARD boundary. A missing boundary can make the rest of a file appear to be one malformed contact.", targetTool: "/tool/vcf-repair", sections: [
       { heading: "Identify the broken boundary", paragraphs: ["Open the raw or validation view and locate the first block that lacks a start or end marker. Do not insert lines based only on line count; use nearby VERSION and FN properties as evidence."] },
-      { heading: "Repair and compare counts", paragraphs: ["A safe repair creates a new file and reports the number of complete cards. Compare it with the number of recognisable contact blocks in the source."], steps: ["Validate the copied file.", "Inspect the reported incomplete block.", "Apply the boundary repair.", "Validate the output and open it in the viewer."] },
+      { heading: "Repair and compare counts", paragraphs: ["A safe repair creates a new file and reports the number of complete cards. Compare it with the number of recognizable contact blocks in the source."], steps: ["Validate the copied file.", "Inspect the reported incomplete block.", "Apply the boundary repair.", "Validate the output and open it in the viewer."] },
       { heading: "Do not hide truncation", paragraphs: ["If the final card is cut off mid-value, adding END:VCARD may produce a syntactically complete but incomplete contact. Treat truncation as a data-recovery problem, not a cosmetic fix."] },
     ], related: [{ label: "Repair a VCF", href: "/tool/vcf-repair" }, { label: "Open the raw VCF", href: "/tool/vcf-editor" }], sources: [officialSources.rfc2426, officialSources.rfc6350]
   }),
@@ -235,7 +235,7 @@ const launchArticles: ContentPage[] = [
   }),
   article({
     slug: "quoted-printable-vcard-names", title: "How to Fix Quoted-Printable Names in Old VCF Files", metaTitle: "Fix Quoted-Printable Names in Old VCF Files", description: "Understand legacy quoted-printable encoding and repair names without losing non-ASCII characters.", intro: "Older vCard 2.1 exports may use quoted-printable values. A parser that ignores the encoding can show equals signs, broken accents, or wrapped names.", targetTool: "/tool/vcf-repair", sections: [
-      { heading: "Recognise the pattern", paragraphs: ["Quoted-printable values commonly include an ENCODING parameter and hexadecimal byte escapes. Line folding can split the encoded value across physical lines, so both rules must be handled together."] },
+      { heading: "recognize the pattern", paragraphs: ["Quoted-printable values commonly include an ENCODING parameter and hexadecimal byte escapes. Line folding can split the encoded value across physical lines, so both rules must be handled together."] },
       { heading: "Decode a copy and inspect it", paragraphs: ["The repair workflow should preserve the original property semantics while decoding the display value. Check accented, Cyrillic, and Asian names individually rather than trusting one sample."], steps: ["Validate the source copy.", "Inspect encoding and folding warnings.", "Decode quoted-printable values in the output copy.", "Compare representative names with the original export."] },
       { heading: "When the source is already damaged", paragraphs: ["If a legacy export replaced bytes with question marks before you received it, decoding cannot recreate the original characters. Request a fresh export when accuracy matters."] },
     ], related: [{ label: "Repair a VCF", href: "/tool/vcf-repair" }, { label: "Fix strange characters", href: "/guide/fix-strange-characters-vcf" }], sources: [officialSources.rfc2426]
@@ -248,7 +248,7 @@ const launchArticles: ContentPage[] = [
     ], related: [{ label: "VCF validator", href: "/tool/vcf-validator" }, { label: "Compatibility checker", href: "/tool/vcf-compatibility-checker" }], sources: [officialSources.rfc2426, officialSources.rfc6350]
   }),
   article({
-    slug: "unsupported-vcard-version", title: "Why an App Says the vCard Version Is Unsupported", metaTitle: "Why a vCard Version Is Unsupported", description: "Resolve version mismatch errors by converting a copy and checking field compatibility.", intro: "An unsupported-version message means the destination does not recognise the VERSION value or the way a field is encoded. Convert a copy to the documented target, then test it.", targetTool: "/tool/vcard-version-converter", sections: [
+    slug: "unsupported-vcard-version", title: "Why an App Says the vCard Version Is Unsupported", metaTitle: "Why a vCard Version Is Unsupported", description: "Resolve version mismatch errors by converting a copy and checking field compatibility.", intro: "An unsupported-version message means the destination does not recognize the VERSION value or the way a field is encoded. Convert a copy to the documented target, then test it.", targetTool: "/tool/vcard-version-converter", sections: [
       { heading: "Find the destination's expected version", paragraphs: ["Look for the current import documentation or a small export produced by the destination. Its own export is often the clearest compatibility fixture."] },
       { heading: "Convert with warnings visible", paragraphs: ["Choose a target such as vCard 3.0 only when it matches the workflow. Review parameters, repeated properties, and unknown fields that may be dropped or rewritten."], steps: ["Keep the original VCF.", "Inspect VERSION values in the source.", "Convert a working copy to the destination target.", "Validate and test a small import."] },
       { heading: "Do not equate acceptance with fidelity", paragraphs: ["An app may accept the converted file and still omit photos, notes, or custom fields. Compare representative contacts after import and keep the source archive."] },
@@ -284,16 +284,16 @@ const launchArticles: ContentPage[] = [
   }),
   article({
     slug: "x-properties-vcard", title: "What X-Properties Mean in a VCF File", metaTitle: "What X-Properties Mean in a VCF File", description: "Handle vendor-specific vCard properties without assuming every importer understands them.", intro: "X-properties are non-standard or vendor-specific properties. They may contain useful metadata, but they are also a common source of compatibility differences.", targetTool: "/tool/vcf-compatibility-checker", sections: [
-      { heading: "Preserve unknown data when possible", paragraphs: ["A converter should keep unrecognised properties in the source archive or warn before dropping them. Do not rename an X-property into a standard field without knowing its semantics."] },
+      { heading: "Preserve unknown data when possible", paragraphs: ["A converter should keep unrecognized properties in the source archive or warn before dropping them. Do not rename an X-property into a standard field without knowing its semantics."] },
       { heading: "Use a destination fixture", paragraphs: ["Export one contact from the destination application and compare its custom properties with the source. This reveals whether the platform uses a stable extension or a one-off internal key."], steps: ["Validate the copied VCF.", "List X-properties and their values.", "Compare a destination-generated sample.", "Choose preserve, remove, or map with an explicit rule."] },
       { heading: "Privacy review", paragraphs: ["Custom properties can include CRM IDs, sync tokens, or internal notes. Remove them from a public card when the recipient does not need them."] },
     ], related: [{ label: "Compatibility checker", href: "/tool/vcf-compatibility-checker" }, { label: "Remove private fields", href: "/tool/strip-private-contact-fields" }], sources: [officialSources.rfc6350, officialSources.rfc2426]
   }),
   article({
-    slug: "uid-property-vcard", title: "What the UID Field Does in vCard", metaTitle: "What the UID Field Does in vCard", description: "Understand stable contact identifiers and why duplicate workflows should not discard them casually.", intro: "UID identifies a vCard instance for synchronisation and change tracking. It is not automatically proof that two cards represent the same person.", targetTool: "/tool/vcf-validator", sections: [
+    slug: "uid-property-vcard", title: "What the UID Field Does in vCard", metaTitle: "What the UID Field Does in vCard", description: "Understand stable contact identifiers and why duplicate workflows should not discard them casually.", intro: "UID identifies a vCard instance for synchronization and change tracking. It is not automatically proof that two cards represent the same person.", targetTool: "/tool/vcf-validator", sections: [
       { heading: "UID is an identifier, not a display field", paragraphs: ["A UID can remain stable while names or phone numbers change. It should not be shown as a person's name or merged into a phone number column."] },
       { heading: "Duplicate detection uses more than UID", paragraphs: ["Exports from different systems may generate different UIDs for the same person, while shared or copied UIDs can appear on unrelated cards. Combine UID evidence with phones, emails, and human review."], steps: ["Inspect UID values in a source copy.", "Compare duplicates using multiple signals.", "Preserve a chosen UID when merging cards.", "Validate the output and record the merge decision."] },
-      { heading: "Synchronisation implications", paragraphs: ["Changing or removing UIDs can make a downstream CardDAV or address-book sync treat a card as new. Only rewrite them when the destination workflow explicitly requires it."] },
+      { heading: "synchronization implications", paragraphs: ["Changing or removing UIDs can make a downstream CardDAV or address-book sync treat a card as new. Only rewrite them when the destination workflow explicitly requires it."] },
     ], related: [{ label: "VCF validator", href: "/tool/vcf-validator" }, { label: "Compare VCF backups", href: "/guide/compare-two-vcf-backups" }], sources: [officialSources.rfc6350]
   }),
   article({
@@ -306,7 +306,7 @@ const launchArticles: ContentPage[] = [
   article({
     slug: "online-vcf-converters-safe", title: "Are Online VCF Converters Safe?", metaTitle: "Are Online VCF Converters Safe? A Privacy Checklist", description: "Evaluate whether a contact-file tool uploads your address book and what to check before using it.", intro: "A VCF contains personal data. Before using any online converter, establish whether processing is local or server-side, what is retained, and how downloads are protected.", targetTool: "/security", sections: [
       { heading: "Ask where the bytes go", paragraphs: ["Read the privacy and security documentation, inspect network activity when appropriate, and look for a clear statement about upload, retention, logging, and deletion. A polished interface is not proof of local processing."] },
-      { heading: "Minimise the data first", paragraphs: ["Use a synthetic fixture or a redacted subset for testing. Remove photos, notes, addresses, and custom identifiers before sending a file to a service that you have not assessed."], steps: ["Create a copy of the source export.", "Remove fields the workflow does not need.", "Check the tool's processing and retention model.", "Delete temporary uploads and verify the downloaded result."] },
+      { heading: "minimize the data first", paragraphs: ["Use a synthetic fixture or a redacted subset for testing. Remove photos, notes, addresses, and custom identifiers before sending a file to a service that you have not assessed."], steps: ["Create a copy of the source export.", "Remove fields the workflow does not need.", "Check the tool's processing and retention model.", "Delete temporary uploads and verify the downloaded result."] },
       { heading: "Why vCard Editor is local-first", paragraphs: ["The editor parses and transforms the selected file in the browser and creates downloads locally. The security page documents the boundaries and limitations; it is still wise to keep source backups and use least-data fixtures."] },
     ], related: [{ label: "Read the security model", href: "/security" }, { label: "Remove private fields", href: "/tool/strip-private-contact-fields" }], sources: [officialSources.rfc6350]
   }),
@@ -318,9 +318,9 @@ const launchArticles: ContentPage[] = [
     ], related: [{ label: "How it works", href: "/how-it-works" }, { label: "Security model", href: "/security" }], sources: [officialSources.rfc6350]
   }),
   article({
-    slug: "spreadsheet-formula-injection-contact-csv", title: "How Spreadsheet Formula Injection Can Affect Contact CSV Exports", metaTitle: "Spreadsheet Formula Injection in Contact CSV Exports", description: "Recognise cells that could be interpreted as formulas when a contact CSV is opened in a spreadsheet.", intro: "Contact names, notes, or organisations can begin with characters that spreadsheet applications interpret as formulas. Treat exported CSV as data and review it before opening or sharing.", targetTool: "/tool/vcf-to-csv", sections: [
+    slug: "spreadsheet-formula-injection-contact-csv", title: "How Spreadsheet Formula Injection Can Affect Contact CSV Exports", metaTitle: "Spreadsheet Formula Injection in Contact CSV Exports", description: "recognize cells that could be interpreted as formulas when a contact CSV is opened in a spreadsheet.", intro: "Contact names, notes, or organizations can begin with characters that spreadsheet applications interpret as formulas. Treat exported CSV as data and review it before opening or sharing.", targetTool: "/tool/vcf-to-csv", sections: [
       { heading: "The risk is in the destination", paragraphs: ["A CSV is text, but a spreadsheet may evaluate cells that begin with =, +, -, or @. A malicious or accidental value can trigger a formula when opened in a capable application."] },
-      { heading: "Reduce exposure", paragraphs: ["Use a preview, open untrusted files in a safe environment, and neutralise formula-like leading characters when your business workflow allows it. Keep the raw VCF as the authoritative source."], steps: ["Export a working CSV copy.", "Scan names, notes, and organisation fields.", "Choose a neutralisation policy for formula-like values.", "Share only the reviewed file and document the transformation."] },
+      { heading: "Reduce exposure", paragraphs: ["Use a preview, open untrusted files in a safe environment, and neutralize formula-like leading characters when your business workflow allows it. Keep the raw VCF as the authoritative source."], steps: ["Export a working CSV copy.", "Scan names, notes, and organization fields.", "Choose a neutralisation policy for formula-like values.", "Share only the reviewed file and document the transformation."] },
       { heading: "Do not silently rewrite contact data", paragraphs: ["Prefixing a value changes its display and may affect a later VCF conversion. Make the protection visible and reversible, especially for notes or names that intentionally begin with symbols."] },
     ], related: [{ label: "VCF to CSV", href: "/tool/vcf-to-csv" }, { label: "Remove private fields", href: "/tool/strip-private-contact-fields" }], sources: [officialSources.rfc6350]
   }),
@@ -340,11 +340,21 @@ function editorialTheme(page: ContentPage) {
   return editorialThemes.find((theme) => theme.test.test(`${page.slug} ${page.title} ${page.description}`)) ?? editorialThemes[4];
 }
 
+function slugSeed(slug: string) {
+  let hash = 0;
+  for (const character of slug) hash = (hash * 31 + character.charCodeAt(0)) >>> 0;
+  return hash;
+}
+
 function expandEditorialContent(page: ContentPage, kind: ContentKind): ContentPage {
   const theme = editorialTheme(page);
   const destination = page.targetTool ? `the ${page.targetTool.replace("/tool/", "").replaceAll("-", " ")} workspace` : "the browser workspace";
   const kindLabel = kind === "guide" ? "this guide" : kind === "format" ? "this reference" : "this platform workflow";
-  const expansion: ContentSection[] = [
+  const seed = slugSeed(page.slug);
+
+  // Variant pools keep the appended coaching sections useful while avoiding an
+  // identical boilerplate block on every page of the library.
+  const decisionSections: ContentSection[] = [
     {
       heading: "Make the decision before changing data",
       paragraphs: [
@@ -354,6 +364,25 @@ function expandEditorialContent(page: ContentPage, kind: ContentKind): ContentPa
       steps: ["Name the source and destination formats.", "Save an untouched source copy.", "Choose the smallest useful transformation.", "Record the expected count and must-keep fields."],
     },
     {
+      heading: "Decide the outcome before you touch the file",
+      paragraphs: [
+        `Every reliable ${page.title} run starts with one question: what should be true when the file arrives at its destination? Name the change you want — a repair, a filter, a version shift — and treat everything else in ${theme.label} as something to preserve by default.`,
+        `For ${page.title}, write the plan next to the file before opening ${destination}: which fields must survive, what the output count should be, and where the rollback copy lives. Checking ${theme.checks} against that written intent turns a vague hope into a pass/fail review.`,
+      ],
+      steps: ["State the intended outcome in one sentence.", "List the fields that must not change.", "Keep the source export in a separate folder.", "Define what failure would look like."],
+    },
+    {
+      heading: "Set the goal before the first export",
+      paragraphs: [
+        `A clear goal separates a deliberate ${page.title} from guesswork. Choose exactly one transformation for this pass, decide how ${theme.label} should look afterwards, and keep every other property frozen. One deliberate change at a time is easy to verify; several stacked changes are impossible to attribute.`,
+        `Before exporting, confirm the practical constraints around ${page.title}: the receiving application, its accepted versions, and its limits around ${theme.checks}. If any constraint is unknown, test with a synthetic copy first rather than discovering the limit during a full import.`,
+      ],
+      steps: ["Pick one transformation for this pass.", "Note the destination's supported version and limits.", "Freeze every field outside the chosen change.", "Plan a second pass instead of stacking changes."],
+    },
+  ];
+
+  const fixtureSections: ContentSection[] = [
+    {
       heading: "Use a representative test fixture",
       paragraphs: [
         `A successful ${page.title} download is not the same as a successful migration. Before processing a complete address book, use a small copied sample that exercises the risky parts of ${theme.label}. ${theme.example}`,
@@ -362,6 +391,25 @@ function expandEditorialContent(page: ContentPage, kind: ContentKind): ContentPa
       steps: ["Start with five to ten representative records.", "Include one edge case and one ordinary record.", "Compare the preview with the source.", "Stop if a change is not explained by the chosen rule."],
     },
     {
+      heading: "Rehearse on a small sample first",
+      paragraphs: [
+        `Treat the full address book as off-limits until ${page.title} has survived a rehearsal. Build a tiny fixture from copied records that stresses ${theme.label}: unusual characters, repeatable fields, and at least one deliberately awkward value. ${theme.example}`,
+        `Run the same ${page.title} steps on the fixture that you intend to run on the real export, including the final import or share. A rehearsal only counts if it reaches the destination; differences between the preview and what actually arrived are the findings that matter.`,
+      ],
+      steps: ["Copy five records into a scratch file.", "Add one awkward value on purpose.", "Run the full workflow end to end.", "Record anything that surprised you."],
+    },
+    {
+      heading: "Prove the workflow on risky records",
+      paragraphs: [
+        `The contacts most likely to break a migration are the ones least represented in a sample. When preparing ${page.title}, pick three difficult cards deliberately — long notes, multiple phones, names with combining marks — and confirm ${theme.label} survives each step intact.`,
+        `Keep the ${page.title} fixture reusable. Saving the sample beside the output makes regressions visible: if a tool update changes behavior for ${theme.label}, rerunning the same fixture shows the difference in minutes instead of after an import.`,
+      ],
+      steps: ["Choose three genuinely difficult records.", "Confirm each survives every step.", "Save the fixture beside the output.", "Rerun it after any tool update."],
+    },
+  ];
+
+  const verificationSections: ContentSection[] = [
+    {
       heading: "Verify the output at the destination boundary",
       paragraphs: [
         `After ${page.title} produces a file, validate the output independently before importing or sharing it. Check that the file opens, the card count is plausible, and the key fields remain present. A standards-valid file can still lose information when a destination application supports only a subset of the format.`,
@@ -369,13 +417,51 @@ function expandEditorialContent(page: ContentPage, kind: ContentKind): ContentPa
       ],
       steps: ["Run the validator or viewer on the downloaded copy.", "Compare counts and representative fields.", "Test the destination with the small sample.", "Only then process the full address book."],
     },
+    {
+      heading: "Check the result where it will be used",
+      paragraphs: [
+        `The final judge of ${page.title} is the destination, not the preview. Import the smallest useful batch first, then inspect what actually arrived: names, phone formatting, email addresses, organisation links, and any field that mattered enough to plan around.`,
+        `If the received data matches the ${page.title} plan, scale up. If it does not, stop before the large import and compare the downloaded file against the source copy — the difference will be in parsing, in the transformation, or in the destination's own interpretation.`,
+      ],
+      steps: ["Import a small batch before the full set.", "Inspect what arrived, not what was sent.", "Attribute any difference to a specific step.", "Scale up only after a clean match."],
+    },
+    {
+      heading: "Close the loop before deleting anything",
+      paragraphs: [
+        `Nothing about ${page.title} is finished while the original export is your only recovery path. Verify the produced file opens cleanly, spot-check the records you care most about, and confirm the destination shows the expected count before any cleanup step touches the source folder.`,
+        `Archive the ${page.title} inputs and outputs together with a dated note describing the choices made for ${theme.label}. Future migrations inherit those decisions; a five-line note today prevents re-deriving them from memory months later.`,
+      ],
+      steps: ["Validate the output file independently.", "Spot-check priority records at the destination.", "Confirm counts before any cleanup.", "Archive inputs, outputs, and a dated note."],
+    },
   ];
+
+  const ordered = [decisionSections[seed % 3], fixtureSections[(seed >>> 2) % 3], verificationSections[(seed >>> 4) % 3]];
+  const expansion = ordered.slice(seed % 3).concat(ordered.slice(0, seed % 3));
+  const answers = [
+    `Use ${kindLabel} to make one deliberate change at a time, preserve the original source, and verify the downloaded result before another application receives it.`,
+    `Work through ${kindLabel} on a copy, check ${theme.checks} against the expected result, and keep the untouched export available until the destination has been tested with a small sample.`,
+  ];
+  const checklists = [
+    ["Keep an untouched source copy.", "Test a small representative sample.", "Review counts and required fields.", "Validate the output at the destination."],
+    ["State the intended outcome before starting.", "Rehearse on a fixture with one edge case.", "Compare the preview with what arrives.", "Archive the choices made along the way."],
+  ];
+  const faqPools = [
+    [
+      { question: `How do I avoid losing data during ${page.title}?`, answer: `Keep the original export, inspect a representative sample, and compare the output after using ${destination}. Do not overwrite the source until the destination has been checked.` },
+      { question: `Does ${page.title} guarantee platform compatibility?`, answer: "No. It is a preparation and verification workflow. Destination applications can support different fields, versions, limits, and import paths." },
+    ],
+    [
+      { question: `Should I work on the original file for ${page.title}?`, answer: "No. Copy the export first, transform the copy, and keep the original as the rollback point. The tools never write back to your selected file, but the habit protects you outside this workspace too." },
+      { question: `What is the fastest way to verify the result of ${page.title}?`, answer: `Check the card count, open a few representative contacts, and run a small destination import. If those three checks pass, the remaining records rarely behave differently.` },
+    ],
+  ];
+
   return {
     ...page,
     sections: [...page.sections, ...expansion],
-    answer: page.answer ?? `Use ${kindLabel} to make one deliberate change at a time, preserve the original source, and verify the downloaded result before another application receives it.`,
-    checklist: page.checklist ?? ["Keep an untouched source copy.", "Test a small representative sample.", "Review counts and required fields.", "Validate the output at the destination."],
-    faqs: page.faqs ?? [{ question: `How do I avoid losing data during ${page.title}?`, answer: `Keep the original export, inspect a representative sample, and compare the output after using ${destination}. Do not overwrite the source until the destination has been checked.` }, { question: `Does ${page.title} guarantee platform compatibility?`, answer: "No. It is a preparation and verification workflow. Destination applications can support different fields, versions, limits, and import paths." }],
+    answer: page.answer ?? answers[seed % answers.length],
+    checklist: page.checklist ?? checklists[seed % checklists.length],
+    faqs: page.faqs ?? faqPools[seed % faqPools.length],
   };
 }
 
@@ -397,12 +483,12 @@ const allPlatforms: ContentPage[] = [
   platformWorkflow("export-google-contacts", "Export Google Contacts to CSV or VCF", "Choose a portable Google Contacts export and inspect it locally.", "VCF is usually better for contact semantics; CSV is easier to inspect as rows and columns.", "/tool/vcf-viewer", ["Export from the current Google Contacts interface.", "Keep the original archive.", "Inspect VCF locally or convert it to CSV.", "Record the export date."]),
   platformWorkflow("export-iphone-contacts", "Export Contacts from iPhone", "Prepare an iPhone contact export for backup or migration.", "Export paths depend on the services and apps configured on the device.", "/tool/vcf-viewer", ["Create a VCF export using a trusted device workflow.", "Inspect its contact count.", "Keep an untouched backup.", "Convert only a working copy."]),
   platformWorkflow("export-apple-contacts-mac", "Export Apple Contacts on Mac", "Inspect and prepare a vCard exported from Apple Contacts on Mac.", "Apple Contacts can export selected cards or a contact archive; VCF is the portable interchange choice.", "/tool/vcf-viewer", ["Export selected contacts as vCard.", "Inspect the local copy.", "Review photos and custom fields.", "Validate before another platform import."]),
-  platformWorkflow("transfer-contacts-without-google", "Transfer Contacts Without Google", "Move contacts with a local VCF instead of account synchronisation.", "A VCF file can transfer an address book without connecting it to Google Sync.", "/tool/vcf-editor", ["Export a VCF from the source device.", "Review and clean the local copy.", "Move it through a trusted offline or direct channel.", "Import and spot-check the destination."]),
-  platformWorkflow("transfer-contacts-without-icloud", "Transfer Contacts Without iCloud", "Move contacts with a reviewed VCF rather than iCloud synchronisation.", "A local vCard transfer can be useful when cloud sync is unavailable or unwanted.", "/tool/vcf-editor", ["Export a VCF from the source address book.", "Validate it locally.", "Transfer the copy to the destination.", "Confirm the imported count and fields."]),
+  platformWorkflow("transfer-contacts-without-google", "Transfer Contacts Without Google", "Move contacts with a local VCF instead of account synchronization.", "A VCF file can transfer an address book without connecting it to Google Sync.", "/tool/vcf-editor", ["Export a VCF from the source device.", "Review and clean the local copy.", "Move it through a trusted offline or direct channel.", "Import and spot-check the destination."]),
+  platformWorkflow("transfer-contacts-without-icloud", "Transfer Contacts Without iCloud", "Move contacts with a reviewed VCF rather than iCloud synchronization.", "A local vCard transfer can be useful when cloud sync is unavailable or unwanted.", "/tool/vcf-editor", ["Export a VCF from the source address book.", "Validate it locally.", "Transfer the copy to the destination.", "Confirm the imported count and fields."]),
   platformWorkflow("samsung-vcf-contacts", "Samsung Contact Export and Import", "Prepare a VCF for a Samsung Contacts migration.", "Samsung import and export screens vary by device and One UI version.", "/tool/vcf-validator", ["Export a VCF from the source device.", "Validate names and phones.", "Split the file if the receiving workflow requires it.", "Test a small import."]),
   platformWorkflow("nextcloud-vcard", "Nextcloud vCard Compatibility", "Inspect and prepare vCards used with Nextcloud Contacts.", "Nextcloud versions and CardDAV clients can preserve different extension fields.", "/tool/vcf-compatibility-checker", ["Export a small synthetic set.", "Inspect versions and unknown properties.", "Preserve the source fields.", "Record the exact server and client versions tested."]),
   platformWorkflow("thunderbird-vcard", "Thunderbird vCard Workflow", "Prepare and inspect contact files used with Thunderbird.", "Address-book import options can vary by Thunderbird release and installed extensions.", "/tool/vcf-compatibility-checker", ["Export or choose a copied address-book file.", "Validate its version.", "Test several synthetic contacts.", "Compare the imported fields."]),
-  platformWorkflow("crm-csv-to-vcf", "Convert CRM CSV Contacts to VCF", "Map a CRM contact export into portable vCards.", "CRM exports often include custom identifiers and columns that should not be guessed.", "/tool/csv-to-vcf", ["Choose the CRM CSV copy.", "Map only recognised contact columns.", "Preserve the original export separately.", "Validate the generated VCF."]),
+  platformWorkflow("crm-csv-to-vcf", "Convert CRM CSV Contacts to VCF", "Map a CRM contact export into portable vCards.", "CRM exports often include custom identifiers and columns that should not be guessed.", "/tool/csv-to-vcf", ["Choose the CRM CSV copy.", "Map only recognized contact columns.", "Preserve the original export separately.", "Validate the generated VCF."]),
   platformWorkflow("spreadsheet-to-whatsapp-contacts", "Prepare Spreadsheet Contacts for WhatsApp", "Create ordinary phone contacts from a spreadsheet without messaging automation.", "This workflow creates address-book contacts only; it does not scrape, message, or automate WhatsApp.", "/tool/excel-to-vcf", ["Keep one authorised contact per row.", "Map name and phone columns.", "Review country codes.", "Import the VCF into the phone address book."]),
   platformWorkflow("apple-contacts-vcf-compatibility", "Apple Contacts VCF Compatibility Report", "Run conservative local checks before an Apple Contacts import.", "Published compatibility remains guidance-only until a dated Apple device and application test is recorded.", "/tool/vcf-compatibility-checker", ["Select the Apple profile.", "Review version and photo warnings.", "Test a synthetic subset.", "Record the app and operating-system version."]),
   platformWorkflow("google-contacts-vcf-compatibility", "Google Contacts VCF Compatibility Report", "Run conservative local checks before a Google Contacts import.", "Published compatibility remains guidance-only until a dated account workflow test is recorded.", "/tool/vcf-compatibility-checker", ["Select the Google profile.", "Review card and field warnings.", "Test a synthetic subset.", "Record the result and date."]),
@@ -415,7 +501,7 @@ const allPlatforms: ContentPage[] = [
   platform({ slug: "import-vcf-iphone", title: "Import a VCF File into iPhone Contacts", metaTitle: "How to Import a VCF File into iPhone Contacts", description: "Validate and prepare a VCF backup before importing it into iPhone Contacts.", intro: "A clean, compatible VCF is easier to import and verify on iPhone. Use a copy and check a handful of contacts after the import completes.", targetTool: "/tool/vcf-validator", sections: [{ heading: "Review the file", paragraphs: ["Check the version, contact count, names, and phone fields. Remove oversized photos if the file is unexpectedly large." ]}], related: [{ label: "Validate a VCF", href: "/tool/vcf-validator" }, { label: "Remove contact photos", href: "/tool/remove-vcf-photos" }] }),
   platform({ slug: "excel-contacts-to-android", title: "Transfer Contacts from Excel to Android", metaTitle: "How to Transfer Excel Contacts to Android", description: "Convert an Excel contact sheet into a VCF file suitable for an Android import.", intro: "Keep phone columns as text, map the sheet deliberately, and review the generated VCF before importing it into Android Contacts.", targetTool: "/tool/excel-to-vcf", sections: [{ heading: "Use a mapped VCF", paragraphs: ["The Excel to VCF tool supports generic and common platform mappings. Preview the contacts, check leading zeros and plus signs, then move the VCF to your device." ]}], related: [{ label: "Excel to VCF", href: "/tool/excel-to-vcf" }, { label: "Normalize phone numbers", href: "/tool/normalize-phone-numbers" }] }),
   platform({ slug: "excel-contacts-to-iphone", title: "Transfer Contacts from Excel to iPhone", metaTitle: "How to Transfer Excel Contacts to iPhone", description: "Turn an Excel contact list into a reviewed VCF file for an iPhone migration.", intro: "Excel is convenient for preparing rows, but VCF is the contact interchange format. Keep the spreadsheet as a source and inspect the generated cards before import.", targetTool: "/tool/excel-to-vcf", sections: [{ heading: "Prepare the workbook", paragraphs: ["Use one contact per row and map first name, last name, phone, email, and organization columns. Keep the original workbook unchanged." ]}], related: [{ label: "Excel to VCF", href: "/tool/excel-to-vcf" }, { label: "VCF validator", href: "/tool/vcf-validator" }] }),
-  platform({ slug: "compatibility-matrix", title: "vCard Compatibility Matrix", metaTitle: "vCard Compatibility Matrix | vCard Editor", description: "Review the tested vCard version, field, and workflow coverage for common contact platforms.", intro: "Compatibility claims should be based on synthetic fixtures, official documentation, and a dated test record. This matrix is intentionally conservative while the laboratory grows.", targetTool: "/tool/vcf-validator", sections: [{ heading: "Current coverage", paragraphs: ["The launch profiles focus on common vCard 3.0 output, multi-contact files, basic names, phone numbers, email addresses, organisations, notes, and categories. Field support varies by destination."]}, { heading: "How to use the matrix", paragraphs: ["Validate a copy, review warnings, and test a small synthetic import before moving a full address book. A blank cell means the workflow has not been verified, not that the platform cannot support it."]}], related: [{ label: "VCF validator", href: "/tool/vcf-validator" }, { label: "vCard version converter", href: "/tool/vcard-version-converter" }] }),
+  platform({ slug: "compatibility-matrix", title: "vCard Compatibility Matrix", metaTitle: "vCard Compatibility Matrix | vCard Editor", description: "Review the tested vCard version, field, and workflow coverage for common contact platforms.", intro: "Compatibility claims should be based on synthetic fixtures, official documentation, and a dated test record. This matrix is intentionally conservative while the laboratory grows.", targetTool: "/tool/vcf-validator", sections: [{ heading: "Current coverage", paragraphs: ["The launch profiles focus on common vCard 3.0 output, multi-contact files, basic names, phone numbers, email addresses, organizations, notes, and categories. Field support varies by destination."]}, { heading: "How to use the matrix", paragraphs: ["Validate a copy, review warnings, and test a small synthetic import before moving a full address book. A blank cell means the workflow has not been verified, not that the platform cannot support it."]}], related: [{ label: "VCF validator", href: "/tool/vcf-validator" }, { label: "vCard version converter", href: "/tool/vcard-version-converter" }] }),
 ].map((page) => expandEditorialContent(page, "platform"));
 
 // These legacy platform URLs duplicate guide intent. Keep them as permanent
