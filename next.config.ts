@@ -1,25 +1,8 @@
 import type { NextConfig } from "next";
-import { existsSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
-
-// scripts/csp-hashes.mjs records the sha256 of every inline bootstrap script
-// in the prerendered HTML after each build, so production can enforce a
-// strict script-src without 'unsafe-inline' while routes stay static.
-function inlineScriptHashes(): string[] {
-  const file = resolve(process.cwd(), ".next", "csp-inline-hashes.json");
-  if (!existsSync(file)) return [];
-  try {
-    return JSON.parse(readFileSync(file, "utf8")) as string[];
-  } catch {
-    return [];
-  }
-}
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
-  // Hash-based Subresource Integrity lets production omit 'unsafe-inline'
-  // from script-src while keeping every route statically prerendered.
   experimental: { sri: { algorithm: "sha256" } },
   async redirects() {
     return [
@@ -39,7 +22,9 @@ const nextConfig: NextConfig = {
   },
   async headers() {
     const isDevelopment = process.env.NODE_ENV === "development";
-    const scriptPolicy = isDevelopment ? "'self' 'unsafe-inline' 'unsafe-eval'" : ["'self'", "https://va.vercel-scripts.com", ...inlineScriptHashes()].join(" ");
+    const scriptPolicy = isDevelopment
+      ? "'self' 'unsafe-inline' 'unsafe-eval'"
+      : "'self' 'unsafe-inline' https://va.vercel-scripts.com";
     return [{
       source: "/(.*)",
       headers: [
