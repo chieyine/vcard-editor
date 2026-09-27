@@ -1,7 +1,56 @@
 import { InfoPage } from "../../components/site-chrome";
 
-export const metadata = { title: "Privacy — vCard Editor", description: "How vCard Editor handles contact files and local browser data.", alternates: { canonical: "/privacy" } };
+export const metadata = {
+  title: "Privacy — vCard Editor",
+  description: "How vCard Editor handles contact files and local browser data.",
+  alternates: { canonical: "/privacy" },
+};
 
 export default function PrivacyPage() {
-  return <InfoPage eyebrow="PRIVACY" title="Your contacts should stay yours." intro="The product is built around a clear boundary: contact-file contents are processed locally in your browser whenever the tool supports it."><h2>What the browser processes</h2><p>When you choose a VCF, CSV, Excel workbook, image, or other supported file, the selected bytes are read by code running in your browser. The current processing tools do not upload contact contents, filenames, names, phone numbers, notes, photos, or generated files to our application server.</p><h2>Ordinary website requests</h2><p>Loading a public page still makes normal requests for HTML, styles, scripts, fonts, and images. Optional analytics, advertising, consent management, or error reporting are disabled by default in this release and must never receive contact data if enabled later.</p><h2>Local browser state</h2><p>The core editor does not require an account, cookie, or cloud project. Temporary in-memory work is cleared when the page is reset or closed. Future preferences or recovery drafts will require clear opt-in copy, versioned storage, expiration, and a visible clear-data action.</p><h2>Shared devices and downloads</h2><p>Downloads, browser history, crash reports, operating-system backups, extensions, and screenshots remain local device concerns. Clear downloaded files and close the tab when working on a shared computer.</p><h2>Your choices and questions</h2><p>Use the Cookies page to review optional storage and the Security page to understand the technical boundary. For privacy questions, use the Contact page and provide a synthetic example rather than real contact data.</p></InfoPage>;
+  return (
+    <InfoPage
+      eyebrow="PRIVACY"
+      title="Your contacts should stay yours."
+      intro="The product is built around a clear boundary: contact-file contents are processed locally in your browser whenever the tool supports it."
+    >
+      <h2>What the browser processes</h2>
+      <p>
+        When you choose a VCF, CSV, Excel workbook, image, or other supported
+        file, the selected bytes are read by code running in your browser. The
+        current processing tools do not upload contact contents, filenames,
+        names, phone numbers, notes, photos, or generated files to our
+        application server.
+      </p>
+      <h2>Ordinary website requests</h2>
+      <p>
+        Loading a public page still makes normal requests for HTML, styles,
+        scripts, fonts, and images. The application loads no third-party
+        analytics or advertising scripts. Optional developer diagnostics are
+        local browser events; they are not sent to an analytics provider. The
+        hosting provider still handles ordinary page requests.
+      </p>
+      <h2>Local browser state</h2>
+      <p>
+        The core editor does not require an account, cookie, or cloud project.
+        The editor retains a draft in tab memory when you navigate away and
+        return. Open another, a full reload, or closing the tab clears it;
+        contact drafts are not saved to browser storage. Future preferences or
+        recovery drafts will require clear opt-in copy, versioned storage,
+        expiration, and a visible clear-data action.
+      </p>
+      <h2>Shared devices and downloads</h2>
+      <p>
+        Downloads, browser history, crash reports, operating-system backups,
+        extensions, and screenshots remain local device concerns. Clear
+        downloaded files and close the tab when working on a shared computer.
+      </p>
+      <h2>Your choices and questions</h2>
+      <p>
+        Use the Cookies page to review optional storage and the Security page to
+        understand the technical boundary. For privacy questions, use the
+        Contact page and provide a synthetic example rather than real contact
+        data.
+      </p>
+    </InfoPage>
+  );
 }

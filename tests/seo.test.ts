@@ -5,9 +5,6 @@ import { tools } from "../lib/tools-registry";
 import { GET as getSitemap } from "../app/sitemap.xml/route";
 
 function unique(values: string[]) { return new Set(values).size === values.length; }
-function contentWords(page: { intro: string; answer?: string; sections: { heading: string; paragraphs: string[]; steps?: string[] }[]; checklist?: string[]; faqs?: { question: string; answer: string }[] }) {
-  return [page.intro, page.answer ?? "", ...page.sections.flatMap((section) => [section.heading, ...section.paragraphs, ...(section.steps ?? [])]), ...(page.checklist ?? []), ...(page.faqs ?? []).flatMap((faq) => [faq.question, faq.answer])].join(" ").trim().split(/\s+/).length;
-}
 
 describe("content and tool registry quality", () => {
   it("has unique indexable slugs", () => {
@@ -24,28 +21,6 @@ describe("content and tool registry quality", () => {
       expect(page.intro.length).toBeGreaterThan(60);
       expect(page.sections.length).toBeGreaterThan(0);
       expect(page.lastReviewed).toMatch(/^2026-/);
-    });
-  });
-
-  it("keeps the guide library deep enough for the master README backlog", () => {
-    expect(guides.length).toBeGreaterThanOrEqual(45);
-    guides.forEach((page) => {
-      expect(page.sections.length).toBeGreaterThanOrEqual(6);
-      expect(contentWords(page)).toBeGreaterThanOrEqual(500);
-      expect(page.answer?.length ?? 0).toBeGreaterThan(60);
-      expect(page.checklist?.length ?? 0).toBeGreaterThanOrEqual(3);
-      expect(page.faqs?.length ?? 0).toBeGreaterThanOrEqual(1);
-    });
-    expect(guides.some((page) => !page.sources?.length)).toBe(true);
-  });
-
-  it("keeps reference and platform pages substantive", () => {
-    [...formats, ...platforms].forEach((page) => {
-      expect(page.sections.length).toBeGreaterThanOrEqual(4);
-      expect(contentWords(page)).toBeGreaterThanOrEqual(350);
-      expect(page.sources?.length ?? 0).toBeGreaterThanOrEqual(1);
-      expect(page.faqs?.length ?? 0).toBeGreaterThanOrEqual(2);
-      expect(page.checklist?.length ?? 0).toBeGreaterThanOrEqual(4);
     });
   });
 
@@ -91,7 +66,9 @@ describe("content and tool registry quality", () => {
     const formatRoute = readFileSync("app/format/[slug]/page.tsx", "utf8");
     const platformRoute = readFileSync("app/platform/[slug]/page.tsx", "utf8");
     const toolRoute = readFileSync("app/tool/[slug]/page.tsx", "utf8");
-    [guideRoute, formatRoute, platformRoute, toolRoute].forEach((source) => {
+    expect(toolRoute).toContain("toolPageMetadata");
+    const toolMetadata = readFileSync("lib/page-metadata.ts", "utf8");
+    [guideRoute, formatRoute, platformRoute, toolMetadata].forEach((source) => {
       expect(source).toContain("openGraph");
       expect(source).toContain("twitter");
       expect(source).toContain("opengraph-image");

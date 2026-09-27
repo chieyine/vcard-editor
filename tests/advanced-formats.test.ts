@@ -33,7 +33,7 @@ describe("real binary expansion formats", () => {
   });
 
   it("embeds international fonts in PDF exports", async () => {
-    const scripts = ["latin-ext", "cyrillic-ext", "greek-ext", "devanagari"];
+    const scripts = ["latin", "latin-ext", "cyrillic", "cyrillic-ext", "greek", "greek-ext", "devanagari", "vietnamese"];
     const load = (weight: 400 | 700) => scripts.map((script) => {
       const bytes = readFileSync(path.join(process.cwd(), `public/fonts/noto-sans-${script}-${weight}.woff2`));
       return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;

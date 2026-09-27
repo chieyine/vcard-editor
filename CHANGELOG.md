@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased — 2026-09-27 audit implementation
+
+- Addressed the code recommendations A01–A18: source-property preservation, standards subsets, field-specific cleanup, camera lifecycle, full comparison, redaction, spreadsheet/PDF limits, cancellation, editor drafts/history and accessible controls.
+- Consolidated all tool routes into one registry and lazy workspace dispatcher; added real table viewing and output/change previews.
+- Replaced global script hashes and private manifest mutation with per-request nonces. Removed analytics providers, generic word-count expansion and obsolete lint checks.
+- Added Node 24 configuration, semantic linting, formatting and a real support destination.
+- No tests, production build, browser flows or deployment checks were run for this implementation; see IMPLEMENTATION_AUDIT.md for static evidence and remaining verification.
+
+The entries below describe historical work, including designs superseded by this audit. `package.json` is the current version source.
+
 ## 0.2.0 — 2026-08-21
 
 - Fixed SQLite→VCF child-row mapping for databases with non-contiguous ids; guarded empty country-code removal; corrected escaped-backslash unescaping; deduplicated split-by-group ZIP names.

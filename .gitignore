@@ -3,3 +3,7 @@ node_modules/
 out/
 .DS_Store
 *.tsbuildinfo
+.env*
+!.env.example
+test-results/
+playwright-report/

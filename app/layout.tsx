@@ -4,11 +4,16 @@ import { analyticsEnabled, isPreviewDeployment } from "../lib/feature-flags";
 import { PageViewTracker } from "../components/page-view-tracker";
 import { ServiceWorkerRegister } from "../components/service-worker-register";
 import { siteUrl } from "../lib/site-config";
+import { connection } from "next/server";
 import { Analytics } from "@vercel/analytics/next";
 
 const verification = {
-  ...(process.env.GOOGLE_SITE_VERIFICATION ? { google: process.env.GOOGLE_SITE_VERIFICATION } : {}),
-  ...(process.env.BING_SITE_VERIFICATION ? { other: { "msvalidate.01": process.env.BING_SITE_VERIFICATION } } : {}),
+  ...(process.env.GOOGLE_SITE_VERIFICATION
+    ? { google: process.env.GOOGLE_SITE_VERIFICATION }
+    : {}),
+  ...(process.env.BING_SITE_VERIFICATION
+    ? { other: { "msvalidate.01": process.env.BING_SITE_VERIFICATION } }
+    : {}),
 };
 
 const shouldLoadVercelAnalytics = process.env.VERCEL === "1" || analyticsEnabled;
@@ -28,21 +33,55 @@ export const metadata: Metadata = {
   alternates: { canonical: "/" },
   openGraph: {
     title: "vCard Editor — Edit, convert, and clean contact files",
-    description: "Open, edit, and export contact files locally in your browser.",
+    description:
+      "Open, edit, and export contact files locally in your browser.",
     type: "website",
     url: siteUrl,
     siteName: "vCard Editor",
-    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "vCard Editor — private contact-file tools" }],
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "vCard Editor — private contact-file tools",
+      },
+    ],
   },
-  twitter: { card: "summary_large_image", title: "vCard Editor — Private contact-file tools", description: "Open, edit, convert, clean, and repair VCF files locally in your browser.", images: ["/opengraph-image"] },
-  robots: isPreviewDeployment ? { index: false, follow: false } : { index: true, follow: true, googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1, "max-video-preview": -1 } },
+  twitter: {
+    card: "summary_large_image",
+    title: "vCard Editor — Private contact-file tools",
+    description:
+      "Open, edit, convert, clean, and repair VCF files locally in your browser.",
+    images: ["/opengraph-image"],
+  },
+  robots: isPreviewDeployment
+    ? { index: false, follow: false }
+    : {
+        index: true,
+        follow: true,
+        googleBot: {
+          index: true,
+          follow: true,
+          "max-image-preview": "large",
+          "max-snippet": -1,
+          "max-video-preview": -1,
+        },
+      },
   ...(Object.keys(verification).length ? { verification } : {}),
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
+  await connection(); // A fresh request nonce is required for every document.
   return (
     <html lang="en">
-      <body><PageViewTracker /><ServiceWorkerRegister />{children}{shouldLoadVercelAnalytics && <Analytics />}</body>
+      <body>
+        {analyticsEnabled && <PageViewTracker />}
+        <ServiceWorkerRegister />
+        {children}
+        {shouldLoadVercelAnalytics && <Analytics />}
+      </body>
     </html>
   );
 }

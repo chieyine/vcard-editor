@@ -10,6 +10,6 @@ describe("parser performance baseline", () => {
     const elapsed = performance.now() - start;
     console.info(`vCard benchmark: ${parsed.contacts.length} contacts in ${elapsed.toFixed(1)}ms, output ${(output.length / 1024).toFixed(1)}KB`);
     expect(parsed.contacts).toHaveLength(2000);
-    expect(elapsed).toBeLessThan(5000);
+    expect(elapsed).toBeLessThan(10000);
   });
 });

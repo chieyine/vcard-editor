@@ -1,31 +1,27 @@
 # Deployment guide
 
-Phase 7 targets a small, reversible production launch. The application is static-first and processes contact files in the browser; no server-side contact processing is required.
+Use Node 24 with a supported Next.js server deployment. Contact processing stays in the browser, but HTML is rendered per request to support fresh CSP nonces. Static export and shared HTML/CDN caching are not supported by this configuration.
 
-## Environment
+## Configuration
 
-Copy `.env.example` to the deployment environment. Keep private values (for example `SENTRY_DSN` and `INDEXNOW_KEY`) server-only. Set `NEXT_PUBLIC_SITE_URL` to the canonical production URL and leave analytics and ads set to `false` until their privacy and consent review is complete.
+Set `NEXT_PUBLIC_SITE_URL` to the canonical HTTPS URL. Support defaults to `support@vcardeditor.com`; override it with `NEXT_PUBLIC_SUPPORT_EMAIL` if necessary. Analytics, ads and monitoring remain disabled by default. The analytics flag currently enables local diagnostic events only.
 
-Preview deployments must set `VERCEL_ENV=preview` (Vercel does this automatically) or `NEXT_PUBLIC_DEPLOY_ENV=preview`. Preview metadata is noindex, `robots.txt` disallows crawling, and the preview sitemap is empty.
+Set `VERCEL_ENV=preview` or `NEXT_PUBLIC_DEPLOY_ENV=preview` for previews. Vercel supplies its own environment value. Preview metadata is noindex, robots disallows crawling, and the sitemap is empty.
 
-## Vercel launch
+## Content security policy
 
-1. Import the repository and use the default Next.js build settings.
-2. Add production environment variables, then protect the production branch and require MFA for the deployment account.
-3. Confirm the production domain, HTTPS redirect, canonical metadata, `robots.txt`, and `sitemap.xml`.
-4. Register the production property in Google Search Console and Bing Webmaster Tools.
-5. Run the smoke checks below from the deployed URL. Keep a rollback deployment available.
+`proxy.ts` creates a nonce, forwards it with the request CSP, and applies the same policy to the response. The root layout uses `connection()` for per-request rendering; JSON-LD reads the nonce from request headers. Production scripts use nonces and strict-dynamic. Development alone permits eval for tooling. Inline styles remain permitted for the existing interface.
 
-## Local release checks
+HTML responses are private/no-store. Do not override this with a CDN document cache. Static assets remain cacheable. The service worker deliberately does not cache document HTML; disconnected navigations use `offline.html`. There is no build-time hash catalogue and no mutation of Next's internal manifests.
 
-```text
-npm ci
-npm run typecheck
-npm test
-npm run compatibility
-npm run benchmark
-npm run build
-```
+## Release verification
 
-After deployment, verify the homepage, every tool route, sample loading, a synthetic VCF download, mobile layout, Safari compatibility, and the large-file warning. Inspect the browser network panel to confirm no contact data leaves the page.
+The audit implementation was checked statically; no production build, browser tests or host verification was performed during that work. Before release, run the repository's normal CI and inspect the actual deployment:
 
+1. Check ordinary pages, an unknown route, error responses and client navigation for CSP violations and matching nonces.
+2. Confirm CSP header size stays bounded, nonces differ across requests, and HTML is not served from a shared cache.
+3. Check editor draft recovery, downloads, cancel/reopen flows, keyboard navigation and camera cleanup using synthetic data.
+4. Verify Chromium, Firefox and WebKit. The configuration now enables WebKit on CI; configuration is not a successful run.
+5. Check canonical metadata, HTTPS, robots and sitemap, and confirm the browser sends no contact data to the server.
+
+Keep a rollback deployment. External address-book imports are recorded separately on `/platform/compatibility-matrix`; current destination verification is not claimed.

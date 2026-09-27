@@ -27,12 +27,78 @@ export default function ToolSearch() {
   useEffect(() => {
     const handleKeydown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
-      const typing = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target?.isContentEditable;
-      if (event.key === "/" && !typing) { event.preventDefault(); inputRef.current?.focus(); }
+      const typing =
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target?.isContentEditable;
+      if (event.key === "/" && !typing) {
+        event.preventDefault();
+        inputRef.current?.focus();
+      }
     };
     window.addEventListener("keydown", handleKeydown);
     return () => window.removeEventListener("keydown", handleKeydown);
   }, []);
-  const matches = useMemo(() => { const available = tools.filter((tool) => tool.indexable); const normalized = query.trim().toLowerCase(); if (!normalized) return available; const expanded = normalized.split(/\s+/).map((term) => synonyms[term] ?? term).join(" "); return available.filter((tool) => `${tool.name} ${tool.slug} ${tool.category} ${tool.description} ${expanded}`.toLowerCase().includes(normalized) || expanded.split(/\s+/).some((term) => `${tool.name} ${tool.slug} ${tool.category} ${tool.description}`.toLowerCase().includes(term))); }, [query]);
-  return <section className="tool-search" id="tool-search" aria-labelledby="tool-search-heading"><div className="tool-search-heading"><p className="eyebrow">SEARCH TOOLS</p><h2 id="tool-search-heading">Find a contact-file job</h2></div><label className="tool-search-box"><span aria-hidden="true">⌕</span><input ref={inputRef} value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Try “duplicates”, “Excel”, or “JSON” — press / to focus" aria-label="Search tools" /></label><div className="tool-search-results" aria-live="polite"><p className="tool-search-count">{matches.length} tool{matches.length === 1 ? "" : "s"} found</p>{matches.map((tool) => <Link href={`/tool/${tool.slug}`} key={tool.slug}><strong>{tool.name}</strong><small>{tool.description}</small></Link>)}{!matches.length && <p>No matching tools. Try a format or task word.</p>}</div></section>;
+  const matches = useMemo(() => {
+    const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    return tools.filter((tool) => {
+      if (!tool.indexable) return false;
+      const searchable =
+        `${tool.name} ${tool.slug} ${tool.category} ${tool.description}`.toLowerCase();
+      return terms.every((term) =>
+        [term, ...(synonyms[term]?.split(" ") ?? [])].some((candidate) =>
+          searchable.includes(candidate),
+        ),
+      );
+    });
+  }, [query]);
+
+  return (
+    <>
+      <section
+        className="tool-search"
+        id="tool-search"
+        aria-labelledby="tool-search-heading"
+      >
+        <h2 id="tool-search-heading">Find a tool</h2>
+        <label className="tool-search-box">
+          <span aria-hidden="true">⌕</span>
+          <input
+            ref={inputRef}
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search by task or format"
+            aria-label="Search tools"
+          />
+        </label>
+        <p className="tool-search-count" role="status">
+          {matches.length} tool{matches.length === 1 ? "" : "s"} found
+        </p>
+      </section>
+      <div className="directory-grid">
+        {matches.map((tool) => (
+          <Link
+            className="directory-card"
+            href={`/tool/${tool.slug}`}
+            key={tool.slug}
+          >
+            <span className="directory-card-top">
+              <span className="job-number">{tool.category}</span>
+            </span>
+            <strong>{tool.name}</strong>
+            <p>{tool.description}</p>
+            <span className="directory-card-bottom">
+              {tool.inputFormats.length
+                ? tool.inputFormats.join(" · ")
+                : "Enter contact details"}
+              <span aria-hidden="true">↗</span>
+            </span>
+          </Link>
+        ))}
+      </div>
+      {!matches.length && (
+        <p>No matching tools. Try “Excel”, “merge”, or “duplicates”.</p>
+      )}
+    </>
+  );
 }

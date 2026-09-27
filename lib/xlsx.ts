@@ -1,21 +1,16 @@
+import { parseXml, childElements, type Document, type Element } from "./xml";
 import { strFromU8, strToU8, unzipSync, zipSync } from "fflate";
+import { uniqueHeaders } from "./tabular-headers";
 
 export type SpreadsheetRow = Record<string, string>;
 
-const XML_ENTITIES: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'" };
-
 function escapeXml(value: string) {
-  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
-}
-
-function decodeXml(value: string) {
-  return value.replace(/&#x([0-9a-f]+);/gi, (_, code: string) => String.fromCodePoint(Number.parseInt(code, 16)))
-    .replace(/&#(\d+);/g, (_, code: string) => String.fromCodePoint(Number(code)))
-    .replace(/&(amp|lt|gt|quot|apos);/g, (_, entity: string) => XML_ENTITIES[entity] ?? "");
-}
-
-function attribute(source: string, name: string) {
-  return source.match(new RegExp(`\\b${name}="([^"]*)"`, "i"))?.[1] ?? "";
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
 }
 
 function columnName(index: number) {
@@ -33,23 +28,38 @@ function cellPosition(reference: string) {
   const match = reference.match(/^([A-Z]+)(\d+)$/i);
   if (!match) return { row: 0, column: 0 };
   let column = 0;
-  for (const character of match[1].toUpperCase()) column = column * 26 + character.charCodeAt(0) - 64;
-  return { row: Math.max(0, Number(match[2]) - 1), column: Math.max(0, column - 1) };
+  for (const character of match[1].toUpperCase())
+    column = column * 26 + character.charCodeAt(0) - 64;
+  return {
+    row: Math.max(0, Number(match[2]) - 1),
+    column: Math.max(0, column - 1),
+  };
 }
 
 function workbookFiles(rows: SpreadsheetRow[]) {
   const headers = Array.from(new Set(rows.flatMap((row) => Object.keys(row))));
-  const allRows = [headers, ...rows.map((row) => headers.map((header) => String(row[header] ?? "")))];
-  const sheetRows = allRows.map((row, rowIndex) => {
-    const cells = row.map((value, columnIndex) => {
-      const reference = `${columnName(columnIndex)}${rowIndex + 1}`;
-      return `<c r="${reference}" t="inlineStr" s="1"><is><t xml:space="preserve">${escapeXml(value)}</t></is></c>`;
-    }).join("");
-    return `<row r="${rowIndex + 1}">${cells}</row>`;
-  }).join("");
+  const allRows = [
+    headers,
+    ...rows.map((row) => headers.map((header) => String(row[header] ?? ""))),
+  ];
+  const sheetRows = allRows
+    .map((row, rowIndex) => {
+      const cells = row
+        .map((value, columnIndex) => {
+          const reference = `${columnName(columnIndex)}${rowIndex + 1}`;
+          return `<c r="${reference}" t="inlineStr" s="1"><is><t xml:space="preserve">${escapeXml(value)}</t></is></c>`;
+        })
+        .join("");
+      return `<row r="${rowIndex + 1}">${cells}</row>`;
+    })
+    .join("");
   const lastColumn = columnName(Math.max(0, headers.length - 1));
-  const dimension = headers.length ? `A1:${lastColumn}${Math.max(1, allRows.length)}` : "A1";
-  const autoFilter = headers.length ? `<autoFilter ref="A1:${lastColumn}${Math.max(1, allRows.length)}"/>` : "";
+  const dimension = headers.length
+    ? `A1:${lastColumn}${Math.max(1, allRows.length)}`
+    : "A1";
+  const autoFilter = headers.length
+    ? `<autoFilter ref="A1:${lastColumn}${Math.max(1, allRows.length)}"/>`
+    : "";
   const worksheet = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><dimension ref="${dimension}"/><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><sheetFormatPr defaultRowHeight="15"/><cols>${headers.map((header, index) => `<col min="${index + 1}" max="${index + 1}" width="${Math.min(42, Math.max(12, header.length + 4))}" customWidth="1"/>`).join("")}</cols><sheetData>${sheetRows}</sheetData>${autoFilter}</worksheet>`;
 
   return {
@@ -65,55 +75,208 @@ function workbookFiles(rows: SpreadsheetRow[]) {
 }
 
 export function writeXlsx(rows: SpreadsheetRow[]) {
-  const files = Object.fromEntries(Object.entries(workbookFiles(rows)).map(([name, content]) => [name, strToU8(content)]));
+  const files = Object.fromEntries(
+    Object.entries(workbookFiles(rows)).map(([name, content]) => [
+      name,
+      strToU8(content),
+    ]),
+  );
   const archive = zipSync(files, { level: 6 });
-  return archive.buffer.slice(archive.byteOffset, archive.byteOffset + archive.byteLength) as ArrayBuffer;
+  return archive.buffer.slice(
+    archive.byteOffset,
+    archive.byteOffset + archive.byteLength,
+  ) as ArrayBuffer;
 }
 
-function readSharedStrings(files: Record<string, Uint8Array>) {
-  const source = files["xl/sharedStrings.xml"] ? strFromU8(files["xl/sharedStrings.xml"]) : "";
-  return [...source.matchAll(/<si\b[^>]*>([\s\S]*?)<\/si>/gi)].map((match) => [...match[1].matchAll(/<t\b[^>]*>([\s\S]*?)<\/t>/gi)].map((part) => decodeXml(part[1])).join(""));
-}
+const elements = (node: Document | Element, name: string) =>
+  Array.from(node.getElementsByTagNameNS("*", name));
+const content = (node: Element, name: string) =>
+  elements(node, name)[0]?.textContent ?? "";
+export type WorkbookSheet = { name: string; index: number; hidden: boolean };
 
-function resolveSheet(files: Record<string, Uint8Array>) {
-  const workbook = files["xl/workbook.xml"] ? strFromU8(files["xl/workbook.xml"]) : "";
-  const relationships = files["xl/_rels/workbook.xml.rels"] ? strFromU8(files["xl/_rels/workbook.xml.rels"]) : "";
-  const sheetTag = workbook.match(/<sheet\b[^>]*\/>/i)?.[0] ?? "";
-  const name = decodeXml(attribute(sheetTag, "name")) || "Sheet 1";
-  const relationshipId = attribute(sheetTag, "r:id");
-  const relationship = [...relationships.matchAll(/<Relationship\b[^>]*\/>/gi)].find((match) => attribute(match[0], "Id") === relationshipId)?.[0] ?? "";
-  const target = attribute(relationship, "Target").replace(/^\//, "");
-  const path = target ? (target.startsWith("xl/") ? target : `xl/${target.replace(/^\.\//, "")}`) : "xl/worksheets/sheet1.xml";
-  return { name, path };
-}
-
-export function readXlsx(buffer: ArrayBuffer) {
-  const files = unzipSync(new Uint8Array(buffer));
-  if (!files["[Content_Types].xml"] || !files["xl/workbook.xml"]) throw new Error("This is not a supported .xlsx workbook.");
-  const sharedStrings = readSharedStrings(files);
-  const sheet = resolveSheet(files);
-  const source = files[sheet.path] ? strFromU8(files[sheet.path]) : "";
-  if (!source) throw new Error("The first worksheet could not be read.");
-  const warnings: string[] = [];
-  if (/<mergeCells\b/i.test(source)) warnings.push("Merged cells were read by their top-left value; review the mapping.");
-  if (/<f\b/i.test(source)) warnings.push("Formula cells were not evaluated; only cached displayed values were read.");
+export function readXlsx(buffer: ArrayBuffer, sheetIndex?: number) {
+  if (buffer.byteLength > 25 * 1024 * 1024)
+    throw new Error("Use a workbook smaller than 25 MB.");
+  let expandedBytes = 0;
+  let entries = 0;
+  const files = unzipSync(new Uint8Array(buffer), {
+    filter: (file) => {
+      if (++entries > 2000)
+        throw new Error("This workbook contains too many archive entries.");
+      const needed =
+        /^(\[Content_Types\]\.xml|xl\/(workbook\.xml|_rels\/workbook\.xml\.rels|sharedStrings\.xml|styles\.xml|worksheets\/[^/]+\.xml))$/.test(
+          file.name,
+        );
+      if (!needed) return false;
+      expandedBytes += file.originalSize;
+      if (expandedBytes > 64 * 1024 * 1024)
+        throw new Error(
+          "This workbook expands beyond the 64 MB processing limit.",
+        );
+      return true;
+    },
+  });
+  const xml = (path: string) => {
+    if (!files[path]) throw new Error(`Missing workbook part: ${path}`);
+    return parseXml(strFromU8(files[path]));
+  };
+  if (!files["[Content_Types].xml"])
+    throw new Error("This is not a supported XLSX workbook.");
+  const workbook = xml("xl/workbook.xml");
+  const sheetElements = elements(workbook, "sheet");
+  const sheets: WorkbookSheet[] = sheetElements.map((sheet, index) => ({
+    name: sheet.getAttribute("name") || `Sheet ${index + 1}`,
+    index,
+    hidden: ["hidden", "veryHidden"].includes(
+      sheet.getAttribute("state") ?? "",
+    ),
+  }));
+  const selected =
+    sheetIndex ?? sheets.find((sheet) => !sheet.hidden)?.index ?? 0;
+  const sheet = sheetElements[selected];
+  if (!sheet) throw new Error("Choose a worksheet from this workbook.");
+  const relationshipId =
+    sheet.getAttributeNS(
+      "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
+      "id",
+    ) ?? sheet.getAttribute("r:id");
+  const relationship = elements(
+    xml("xl/_rels/workbook.xml.rels"),
+    "Relationship",
+  ).find((item) => item.getAttribute("Id") === relationshipId);
+  if (!relationship || relationship.getAttribute("TargetMode") === "External")
+    throw new Error("External or missing worksheets are unsupported.");
+  const target = relationship.getAttribute("Target") ?? "";
+  const path = new URL(
+    target,
+    "https://workbook.invalid/xl/workbook.xml",
+  ).pathname.slice(1);
+  if (!/^xl\/worksheets\/[^/]+\.xml$/.test(path))
+    throw new Error("Unsupported worksheet path.");
+  const source = xml(path);
+  const warnings = new Set<string>();
+  if (sheets[selected].hidden) warnings.add("You selected a hidden sheet.");
+  if (elements(source, "mergeCell").length)
+    warnings.add(
+      "Merged cells keep only their top-left value. Review the mapped output.",
+    );
+  if (elements(source, "f").length)
+    warnings.add(
+      "Formulas are not evaluated. Only saved cached values are imported.",
+    );
+  const strings = files["xl/sharedStrings.xml"]
+    ? elements(xml("xl/sharedStrings.xml"), "si").map((item) =>
+        elements(item, "t")
+          .map((part) => part.textContent ?? "")
+          .join(""),
+      )
+    : [];
+  const styles = files["xl/styles.xml"] ? xml("xl/styles.xml") : null;
+  const formats = new Map(
+    styles
+      ? elements(styles, "numFmt").map((item) => [
+          Number(item.getAttribute("numFmtId")),
+          item.getAttribute("formatCode") ?? "",
+        ])
+      : [],
+  );
+  const styleIds = styles
+    ? childElements(elements(styles, "cellXfs")[0]).map((item) =>
+        Number(item.getAttribute("numFmtId")),
+      )
+    : [];
+  const date1904 =
+    elements(workbook, "workbookPr")[0]?.getAttribute("date1904") === "1";
+  function displayed(raw: string, formatId: number) {
+    if (!raw || !Number.isFinite(Number(raw))) return raw;
+    const format = formats.get(formatId) ?? "";
+    if (/^0{2,128}$/.test(format) && /^\d+$/.test(raw))
+      return raw.padStart(format.length, "0");
+    if (
+      (formatId >= 14 && formatId <= 17) ||
+      /^yyyy[-/]mm[-/]dd$/i.test(format)
+    ) {
+      const serial = Number(raw);
+      if (serial < 0 || serial > 2958465) {
+        warnings.add("An out-of-range date was kept as its numeric value.");
+        return raw;
+      }
+      if (!date1904 && Math.floor(serial) === 60) {
+        warnings.add(
+          "Excel’s fictitious 1900-02-29 date is kept as serial 60. Review that cell.",
+        );
+        return raw;
+      }
+      const adjusted = date1904 ? serial : serial >= 60 ? serial - 1 : serial;
+      return new Date(
+        (date1904 ? Date.UTC(1904, 0, 1) : Date.UTC(1899, 11, 31)) +
+          adjusted * 86400000,
+      )
+        .toISOString()
+        .slice(0, 10);
+    }
+    if (formatId !== 0 && formatId !== 49)
+      warnings.add(
+        "Some numeric/date display formats are unsupported and remain raw values. Format phone columns as Text in the source to preserve their intended display.",
+      );
+    return raw;
+  }
   const grid: string[][] = [];
-  for (const match of source.matchAll(/<c\b([^>]*)>([\s\S]*?)<\/c>/gi)) {
-    const reference = attribute(match[1], "r");
-    const type = attribute(match[1], "t");
+  const cells = elements(source, "c");
+  if (cells.length > 1000000)
+    throw new Error("The worksheet exceeds one million populated cells.");
+  for (const cell of cells) {
+    const reference = cell.getAttribute("r") ?? "";
+    if (!/^[A-Z]+[1-9]\d*$/i.test(reference))
+      throw new Error("A cell has no valid position.");
     const position = cellPosition(reference);
-    const inline = match[2].match(/<is\b[^>]*>([\s\S]*?)<\/is>/i)?.[1] ?? "";
-    const raw = inline ? [...inline.matchAll(/<t\b[^>]*>([\s\S]*?)<\/t>/gi)].map((part) => decodeXml(part[1])).join("") : decodeXml(match[2].match(/<v\b[^>]*>([\s\S]*?)<\/v>/i)?.[1] ?? "");
-    const value = type === "s" ? sharedStrings[Number(raw)] ?? "" : type === "b" ? (raw === "1" ? "TRUE" : "FALSE") : raw;
+    if (position.row >= 50001 || position.column >= 256)
+      throw new Error("Use at most 50,000 data rows and 256 columns.");
+    const type = cell.getAttribute("t") ?? "n";
+    const raw = content(cell, "v");
+    let value =
+      type === "inlineStr"
+        ? elements(cell, "t")
+            .map((part) => part.textContent ?? "")
+            .join("")
+        : type === "s"
+          ? (strings[Number(raw)] ?? "")
+          : type === "b"
+            ? raw === "1"
+              ? "TRUE"
+              : "FALSE"
+            : type === "n"
+              ? displayed(
+                  raw,
+                  styleIds[Number(cell.getAttribute("s") ?? 0)] ?? 0,
+                )
+              : raw;
+    if (type === "e") {
+      warnings.add(
+        "Spreadsheet error cells were kept as error text for review.",
+      );
+      value = raw;
+    }
     grid[position.row] ??= [];
     grid[position.row][position.column] = value;
   }
-  const headerValues = grid[0] ?? [];
-  const headers = headerValues.map((value, index) => String(value).trim() || `Column ${index + 1}`);
-  const rows = grid.slice(1).filter((values) => values?.some((value) => String(value ?? "").trim())).map((values) => headers.reduce<SpreadsheetRow>((row, header, index) => {
-    row[header] = String(values?.[index] ?? "");
-    return row;
-  }, {}));
-  if (!headers.length) warnings.push("The first worksheet has no header row.");
-  return { headers, rows, sheetName: sheet.name, warnings };
+  const notes = [...warnings];
+  const headers = uniqueHeaders(grid[0] ?? [], notes);
+  const rows = grid
+    .slice(1)
+    .filter((values) => values?.some((value) => value?.trim()))
+    .map((values) =>
+      Object.fromEntries(
+        headers.map((header, index) => [header, values?.[index] ?? ""]),
+      ),
+    );
+  if (!headers.length) notes.push("The selected worksheet has no header row.");
+  return {
+    headers,
+    rows,
+    sheetName: sheets[selected].name,
+    sheetIndex: selected,
+    sheets,
+    warnings: notes,
+  };
 }

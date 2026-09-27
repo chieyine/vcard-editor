@@ -24,23 +24,63 @@ export type AnalyticsEventName =
   | "happycsv_referral_clicked"
   | "consent_updated";
 
-export type AnalyticsPropertyKey = "tool_slug" | "input_format" | "output_format" | "source" | "size_bucket" | "contact_count_bucket" | "duration_bucket" | "error_code" | "device_class" | "path" | "enabled";
-export type AnalyticsProperties = Partial<Record<AnalyticsPropertyKey, string | number | boolean>>;
+export type AnalyticsPropertyKey =
+  | "tool_slug"
+  | "input_format"
+  | "output_format"
+  | "source"
+  | "size_bucket"
+  | "contact_count_bucket"
+  | "duration_bucket"
+  | "error_code"
+  | "device_class"
+  | "path"
+  | "enabled";
+export type AnalyticsProperties = Partial<
+  Record<AnalyticsPropertyKey, string | number | boolean>
+>;
 
-const allowedKeys = new Set<AnalyticsPropertyKey>(["tool_slug", "input_format", "output_format", "source", "size_bucket", "contact_count_bucket", "duration_bucket", "error_code", "device_class", "path", "enabled"]);
+const allowedKeys = new Set<AnalyticsPropertyKey>([
+  "tool_slug",
+  "input_format",
+  "output_format",
+  "source",
+  "size_bucket",
+  "contact_count_bucket",
+  "duration_bucket",
+  "error_code",
+  "device_class",
+  "path",
+  "enabled",
+]);
 
 function safeProperties(properties: AnalyticsProperties = {}) {
-  return Object.fromEntries(Object.entries(properties).filter(([key, value]) => allowedKeys.has(key as AnalyticsPropertyKey) && (typeof value === "string" || typeof value === "number" || typeof value === "boolean")));
+  return Object.fromEntries(
+    Object.entries(properties).filter(
+      ([key, value]) =>
+        allowedKeys.has(key as AnalyticsPropertyKey) &&
+        (typeof value === "string" ||
+          typeof value === "number" ||
+          typeof value === "boolean"),
+    ),
+  );
 }
 
-/**
- * Emits a privacy-safe local event. A provider can subscribe to this event later;
- * Phase 7 deliberately ships with collection disabled by default and never sends
- * contact data, filenames, or file contents.
- */
-export function trackEvent(name: AnalyticsEventName, properties: AnalyticsProperties = {}) {
+/** Optional local diagnostics only. No provider or network bridge is mounted. */
+export function trackEvent(
+  name: AnalyticsEventName,
+  properties: AnalyticsProperties = {},
+) {
   if (!analyticsEnabled || typeof window === "undefined") return;
-  window.dispatchEvent(new CustomEvent("vcardeditor:analytics", { detail: { name, properties: safeProperties(properties), timestamp: Date.now() } }));
+  window.dispatchEvent(
+    new CustomEvent("vcardeditor:analytics", {
+      detail: {
+        name,
+        properties: safeProperties(properties),
+        timestamp: Date.now(),
+      },
+    }),
+  );
 }
 
 export function trackPageView(pathname: string) {

@@ -30,7 +30,7 @@ describe("audit regressions", () => {
     const untouched = removeCountryCode(contacts, "");
     expect(untouched[0].phones).toEqual(["+2348012345678", "0801 234 5678"]);
     const stripped = removeCountryCode(contacts, "+234");
-    expect(stripped[0].phones[0]).toBe("08012345678");
+    expect(stripped[0].phones[0]).toBe("8012345678");
     expect(stripped[0].phones[1]).toBe("0801 234 5678");
   });
 

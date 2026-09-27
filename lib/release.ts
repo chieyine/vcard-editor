@@ -1,9 +1,10 @@
+import { version } from "../package.json";
+
 export const release = {
-  version: "0.2.0",
-  date: "2026-08-21",
+  version,
+  date: "2026-09-27",
   phase: 7,
   channel: "beta",
   analytics: "disabled-by-default",
   ads: "disabled-by-default",
 } as const;
-

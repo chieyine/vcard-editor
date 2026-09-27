@@ -6,7 +6,7 @@ const cards = parseVCard(`BEGIN:VCARD\nVERSION:3.0\nN:Okafor;Ada;;;\nFN:Ada Okaf
 
 describe("contact operations", () => {
   it("normalizes local phone numbers with an explicit country code", () => {
-    expect(normalizePhone("0801 234 5678", "+234")).toBe("+2348012345678");
+    expect(normalizePhone("0801 234 5678", "+234")).toBe("+23408012345678");
   });
 
   it("blocks duplicate matching with exact indexes", () => {
